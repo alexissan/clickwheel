@@ -1,0 +1,5 @@
+module MusicBridge {
+    header "Music.h"
+    header "MusicBridgeSupport.h"
+    export *
+}

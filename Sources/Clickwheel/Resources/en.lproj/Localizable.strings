@@ -1,0 +1,73 @@
+/* Menus */
+"menu.music" = "Music";
+"menu.extras" = "Extras";
+"menu.settings" = "Settings";
+"menu.shuffle_songs" = "Shuffle Songs";
+"menu.now_playing" = "Now Playing";
+"menu.playlists" = "Playlists";
+"menu.songs" = "Songs";
+"menu.clock" = "Clock";
+"menu.brick" = "Brick";
+"menu.loading" = "Loading…";
+"menu.shuffle" = "Shuffle";
+"menu.repeat" = "Repeat";
+"menu.clicker" = "Clicker";
+"menu.haptics" = "Haptics";
+"menu.backlight" = "Backlight Timer";
+"menu.actual_size" = "Actual Size";
+"menu.float" = "Float on Top";
+"menu.about" = "About";
+
+/* Titles */
+"title.ipod" = "iPod";
+"title.now_playing" = "Now Playing";
+
+/* Values */
+"common.on" = "On";
+"common.off" = "Off";
+"repeat.off" = "Off";
+"repeat.all" = "All";
+"repeat.one" = "One";
+"shuffle.off" = "Off";
+"shuffle.songs" = "Songs";
+"backlight.always" = "Always On";
+"backlight.seconds" = "%d Seconds";
+
+/* Now Playing */
+"now.nothing" = "Not Playing";
+"now.of" = "%1$d of %2$d";
+"now.scrubbing" = "Scrub";
+
+/* About */
+"about.playlists" = "Playlists";
+"about.songs" = "Songs";
+"about.source" = "Source";
+"about.model" = "Model";
+"about.version" = "Version";
+"about.note" = "Clickwheel";
+
+/* Brick */
+"brick.won" = "You Win";
+"brick.over" = "Game Over";
+
+/* Errors */
+"error.not_authorised" = "No Access";
+"error.not_authorised.hint" = "Allow access in System Settings › Privacy & Security › Automation.";
+"error.unavailable" = "No Music";
+"error.no_favourites" = "No Favourites";
+"error.no_favourites.hint" = "Star some songs in Apple Music and they'll show up here.";
+"error.music_missing" = "Music.app could not be reached.";
+"error.music_not_running" = "Music.app isn't running.";
+
+/* Accessibility */
+"a11y.wheel" = "Click wheel";
+"a11y.select" = "Select";
+"a11y.hold" = "Hold switch";
+"a11y.hold_on" = "Hold switch on";
+"a11y.battery" = "Battery %d percent";
+"a11y.elapsed" = "%1$@ of %2$@";
+"a11y.starting" = "iPod starting up";
+"a11y.brick" = "Brick game";
+"a11y.score" = "Score %d";
+
+"menu.hold" = "Hold";

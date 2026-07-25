@@ -1,0 +1,13 @@
+.DS_Store
+.build/
+build/
+*.xcuserdatastate
+xcuserdata/
+
+# Generated at build time by Scripts/build_app.sh — see the note in
+# Sources/MusicBridge/shim.c. Music.h is derived from Apple's own scripting
+# definition, so it is regenerated locally rather than redistributed here.
+Sources/MusicBridge/include/Music.h
+
+# Compiled from Sources/Clickwheel/Shaders/ipod.metal on every build.
+Sources/Clickwheel/Resources/Clickwheel.metallib

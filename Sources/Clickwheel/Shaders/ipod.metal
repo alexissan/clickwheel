@@ -1,0 +1,375 @@
+#include <metal_stdlib>
+using namespace metal;
+
+namespace {
+
+// MARK: - Colour space
+//
+// SwiftUI hands `colorEffect` values in the destination (non-linear sRGB)
+// space — measured: a shader writing 0.912 lands at 233/255 in the snapshot.
+// Lighting added in that space is wrong: every `+=` compounds a gamma curve.
+// Decode in, light in linear, encode out.
+
+float3 srgbToLinear(float3 c) {
+    c = max(c, 0.0);
+    return select(c / 12.92, pow((c + 0.055) / 1.055, 2.4), c > 0.04045);
+}
+
+float3 linearToSRGB(float3 c) {
+    c = max(c, 0.0);
+    return select(c * 12.92, 1.055 * pow(c, 1.0 / 2.4) - 0.055, c > 0.0031308);
+}
+
+/// Soft shoulder instead of `saturate`. A clearcoat rim genuinely exceeds 1.0;
+/// clipping it welds a flat white keyline around the object.
+float3 shoulder(float3 c) {
+    const float knee = 0.88;
+    float3 over = max(c - knee, 0.0);
+    return min(c, knee) + (1.0 - knee) * (1.0 - exp(-over / (1.0 - knee)));
+}
+
+// MARK: - Geometry
+
+float sdRoundedBox(float2 p, float2 halfSize, float radius) {
+    float2 q = abs(p) - halfSize + radius;
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
+}
+
+/// Exact gradient of `sdRoundedBox`: axis-aligned along the flats, radial only
+/// inside the corner quadrants.
+float2 sdRoundedBoxGradient(float2 p, float2 halfSize, float radius) {
+    float2 s = float2(p.x < 0.0 ? -1.0 : 1.0, p.y < 0.0 ? -1.0 : 1.0);
+    float2 q = abs(p) - halfSize + radius;
+    float2 g = (q.x > 0.0 && q.y > 0.0)
+        ? normalize(max(q, float2(1e-4)))
+        : ((q.x > q.y) ? float2(1.0, 0.0) : float2(0.0, 1.0));
+    return g * s;
+}
+
+/// Rim roll plus a whole-face dome of a few tenths of a millimetre.
+float3 shellNormal(float2 uv, float d, float2 grad, float roll, float dome) {
+    float t = saturate(-d / max(roll, 1e-3));
+    float angle = (1.0 - t) * (M_PI_F * 0.5);
+    float3 n = float3(grad * sin(angle), cos(angle));
+    n.xy += uv * dome * t;
+    return normalize(n);
+}
+
+// MARK: - Reflectance
+
+float3 fresnelSchlick(float3 f0, float cosTheta) {
+    return f0 + (1.0 - f0) * pow(1.0 - saturate(cosTheta), 5.0);
+}
+
+/// Fresnel for a rough coat: the rim brightens, but blurred and capped.
+float3 fresnelRough(float3 f0, float cosTheta, float roughness) {
+    float3 top = max(float3(1.0 - roughness), f0);
+    return f0 + (top - f0) * pow(1.0 - saturate(cosTheta), 5.0);
+}
+
+float ggx(float3 n, float3 h, float roughness) {
+    float a = max(roughness * roughness, 1e-4);
+    float a2 = a * a;
+    float ndoth = saturate(dot(n, h));
+    float k = ndoth * ndoth * (a2 - 1.0) + 1.0;
+    return a2 / (M_PI_F * k * k);
+}
+
+// MARK: - Environment
+
+/// Far field, for grazing rays: softbox above, dim room, dark desk below.
+float3 studioFar(float3 r, float2 light) {
+    float up = -r.y;                            // SwiftUI's y grows downward
+    float3 sky     = float3(1.34, 1.37, 1.46);
+    float3 horizon = float3(0.60, 0.62, 0.68);
+    float3 ground  = float3(0.11, 0.11, 0.13);
+
+    float3 c = mix(horizon, sky, smoothstep(-0.05, 0.72, up));
+    c = mix(c, ground, smoothstep(-0.12, -0.62, up));
+
+    float key = pow(saturate(dot(r, normalize(float3(-0.34 + light.x, -0.86, 0.38)))), 3.0);
+    c += float3(0.72, 0.73, 0.78) * key;
+
+    float bounce = pow(saturate(dot(r, normalize(float3(0.45, 0.72, 0.53)))), 4.0);
+    c += float3(0.26, 0.23, 0.19) * bounce;
+
+    // The wall behind the camera. Grazing rays reflect backwards, and without
+    // this the silhouette edge goes to a dark outline.
+    c += float3(0.30, 0.31, 0.34) * saturate(-r.z);
+    return c;
+}
+
+/// Near field: where the reflected ray lands on a wall standing in front of
+/// the device. On a nearly flat face a tiny normal change sweeps a long way
+/// across that wall — which is why real glossy panels show a big, soft,
+/// travelling reflection instead of a constant.
+float3 studioWall(float3 r, float2 p, float2 halfSize, float2 light) {
+    float dist = 2.2 * halfSize.y;
+    float2 hit = p + r.xy * (dist / max(r.z, 0.05));
+    float2 q = hit / max(halfSize, float2(1.0));
+
+    float2 boxCentre = float2(-0.55 + light.x * 1.1, -0.95 + light.y * 0.8);
+    float2 e = (q - boxCentre) / float2(1.30, 1.15);
+    float box = 1.0 - smoothstep(0.30, 1.30, length(e));
+
+    float3 c = float3(0.30, 0.31, 0.35);
+    c += float3(2.05, 2.08, 2.16) * box;
+    c += float3(0.30, 0.27, 0.22) * smoothstep(1.5, 3.2, q.y);
+    c += float3(0.16, 0.17, 0.20) * saturate(r.z);
+    return c;
+}
+
+float3 environmentFor(float3 r, float2 p, float2 halfSize, float2 light) {
+    return mix(studioFar(r, light),
+               studioWall(r, p, halfSize, light),
+               smoothstep(0.18, 0.62, r.z));
+}
+
+/// Blue-noise-ish dither, sized in points so it stays one pixel at any scale.
+float grain(float2 p) {
+    return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+} // namespace
+
+// MARK: - Shell
+
+[[ stitchable ]] half4 glossyShell(
+    float2 position,
+    half4 source,
+    float2 size,
+    float radius,
+    float mmToPt,          // points per millimetre, so edges can be real sizes
+    float2 light,          // -1...1, where the key sits; same signal as `sheen`
+    float2 wheelCentre,    // in this view's points; the moulded well
+    float wheelRadius,
+    float pointsPerPixel
+) {
+    float2 halfSize = size * 0.5;
+    float2 centred = position - halfSize;
+    float d = sdRoundedBox(centred, halfSize, radius);
+
+    float aa = max(pointsPerPixel, 0.001) * 0.75;
+    float coverage = 1.0 - smoothstep(-aa, aa, d);
+    if (coverage <= 0.002) { return half4(0.0); }
+
+    float2 grad = sdRoundedBoxGradient(centred, halfSize, radius);
+    float2 uv = centred / max(halfSize, float2(1.0));
+    // The plastic front rolls over in ~0.4 mm, starting after the chrome and
+    // seam bands below.
+    float3 n = shellNormal(uv, d, grad, 0.4 * mmToPt, 0.090);
+
+    float3 v = float3(0.0, 0.0, 1.0);
+    float3 keyPos = float3((-0.55 + light.x) * halfSize.x,
+                           (-1.15 + light.y) * halfSize.y,
+                            2.10 * halfSize.y);
+    float3 l = normalize(keyPos - float3(centred, 0.0));
+    float3 h = normalize(l + v);
+
+    float ndotv = saturate(dot(n, v));
+    float ndotl = saturate(dot(n, l));
+
+    // Polycarbonate clearcoat, n = 1.586 -> F0 = 0.0503.
+    const float3 f0 = float3(0.050);
+    float3 F = fresnelSchlick(f0, ndotv);
+
+    // Cool off-white. Authored in sRGB to match Palette.shellBase.
+    float3 albedo = srgbToLinear(float3(0.941, 0.946, 0.954));
+
+    const float wrap = 0.32;
+    float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
+    float3 ambient = studioFar(n, light) * 0.30;
+    float3 body = albedo * (ambient + 0.86 * diffuse) * (1.0 - F);
+
+    float3 r = reflect(-v, n);
+    float3 spec = environmentFor(r, centred, halfSize, light) * F;
+    spec += ggx(n, h, 0.085) * ndotl * F * 0.60;
+
+    float3 colour = body + spec;
+
+    // The wheel sits in a moulded well, not on top of the body.
+    float wd = length(centred - wheelCentre) - wheelRadius;
+    colour *= 1.0 - 0.30 * (1.0 - smoothstep(0.0, 8.0, wd));    // occlusion
+    colour = mix(colour, colour * 0.38, 1.0 - smoothstep(0.4, 1.9, wd));  // groove
+    float2 wdir = normalize(centred - wheelCentre + float2(1e-4));
+    colour += 0.05 * smoothstep(3.4, 1.6, wd) * saturate(dot(wdir, float2(0.42, 0.74)));
+
+    // The two-part assembly at the silhouette. Crossing the real edge from
+    // outside in, the tone profile runs:
+    //
+    //   chrome hairline (0.2 mm, bright specular)  — the stainless rear shell
+    //   parting seam    (0.4 mm, dark)             — where the two parts meet
+    //   plastic roll    (0.4 mm, bright)           — the front's rolled edge
+    //   flat face
+    //
+    // Without these the object has no visible construction at all: no material
+    // change, no seam, and so no cue that it has any thickness.
+    float inward = -d;                                  // 0 at the silhouette
+    float chrome = 1.0 - smoothstep(0.0, 0.20 * mmToPt, inward);
+    float seam = (1.0 - smoothstep(0.20 * mmToPt, 0.62 * mmToPt, inward))
+               * smoothstep(0.10 * mmToPt, 0.24 * mmToPt, inward);
+
+    // Polished steel: near-white where the key catches it, dark elsewhere,
+    // with none of the plastic's diffuse component.
+    float3 steelDir = normalize(float3(grad * 0.92, 0.38));
+    float3 steel = environmentFor(reflect(-v, steelDir), centred, halfSize, light) * 0.62;
+    steel += pow(saturate(dot(steelDir, normalize(l + v))), 90.0) * 1.5;
+
+    colour = mix(colour, steel, chrome * 0.88);
+    colour = mix(colour, colour * 0.30, seam * 0.85);
+
+    colour = linearToSRGB(shoulder(colour));
+    colour += (grain(position * 2.0) - 0.5) * 0.0055;
+
+    return half4(half3(saturate(colour)), 1.0) * half(coverage);
+}
+
+// MARK: - Click wheel
+
+[[ stitchable ]] half4 clickWheel(
+    float2 position,
+    half4 source,
+    float2 size,
+    float innerRatio,
+    float2 light,
+    float pointsPerPixel
+) {
+    float2 halfSize = size * 0.5;
+    float2 centred = position - halfSize;
+    float outer = min(size.x, size.y) * 0.5;
+    float r = length(centred);
+
+    float aa = max(pointsPerPixel, 0.001) * 0.75;
+    float innerEdge = outer * innerRatio;
+    float coverage = (1.0 - smoothstep(outer - aa, outer + aa, r))
+                   * smoothstep(innerEdge - aa, innerEdge + aa, r);
+    if (coverage <= 0.002) { return half4(0.0); }
+
+    float2 dir = r > 1e-4 ? centred / r : float2(0.0, -1.0);
+    float t = saturate(r / outer);
+
+    // DISHED, not domed. `dir` points outward, so a concave surface needs a
+    // negative coefficient — the old `+dish` lit the wheel as a bubble.
+    float dish = -0.26 * t * t;
+    float rim  =  0.80 * smoothstep(0.90, 1.0, t);
+    float lip  = -0.60 * (1.0 - smoothstep(0.0, 0.09, (r - innerEdge) / outer));
+    float3 n = normalize(float3(dir * (dish + rim + lip), 1.0));
+
+    float3 v = float3(0.0, 0.0, 1.0);
+    float3 keyPos = float3((-0.55 + light.x) * outer * 3.0,
+                           (-1.15 + light.y) * outer * 3.0,
+                            6.0 * outer);
+    float3 l = normalize(keyPos - float3(centred, 0.0));
+    float3 h = normalize(l + v);
+
+    const float roughness = 0.42;
+    float ndotv = saturate(dot(n, v));
+    float ndotl = saturate(dot(n, l));
+    float3 F = fresnelRough(float3(0.050), ndotv, roughness);
+
+    float3 albedo = srgbToLinear(float3(0.812, 0.816, 0.828));
+
+    const float wrap = 0.48;
+    float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
+    float3 ambient = studioFar(n, light) * 0.34;
+    float3 colour = albedo * (ambient + 0.80 * diffuse) * (1.0 - F);
+    colour += studioFar(reflect(-v, n), light) * F * 0.55;
+    colour += ggx(n, h, roughness) * ndotl * F * 0.35;
+
+    // Occlusion into the body at the rim, and under the button at the hole.
+    colour *= 1.0 - 0.22 * smoothstep(0.90, 1.0, t);
+    colour *= 1.0 - 0.30 * (1.0 - smoothstep(innerEdge, innerEdge + outer * 0.09, r));
+
+    colour = linearToSRGB(shoulder(colour));
+
+    // Fine moulding texture — the real wheel is matte, not smooth.
+    colour += (grain(position * 2.0) - 0.5) * 0.010;
+    colour += (grain(position * 0.35 + 11.0) - 0.5) * 0.006;
+
+    return half4(half3(saturate(colour)), 1.0) * half(coverage);
+}
+
+// MARK: - Centre button
+
+[[ stitchable ]] half4 centreButton(
+    float2 position,
+    half4 source,
+    float2 size,
+    float pressed,
+    float2 light,
+    float pointsPerPixel
+) {
+    float2 halfSize = size * 0.5;
+    float2 centred = position - halfSize;
+    float outer = min(size.x, size.y) * 0.5;
+    float r = length(centred);
+
+    float aa = max(pointsPerPixel, 0.001) * 0.75;
+    float coverage = 1.0 - smoothstep(outer - aa, outer + aa, r);
+    if (coverage <= 0.002) { return half4(0.0); }
+
+    float2 dir = r > 1e-4 ? centred / r : float2(0.0, -1.0);
+    float t = saturate(r / outer);
+
+    // Crowned: a shallow dome that turns down sharply into a small edge roll.
+    float crown = 0.30 * t * t;
+    float roll  = 0.95 * smoothstep(0.86, 1.0, t);
+    float3 n = normalize(float3(dir * (crown + roll), 1.0));
+
+    float3 v = float3(0.0, 0.0, 1.0);
+    float3 keyPos = float3((-0.55 + light.x) * outer * 7.0,
+                           (-1.15 + light.y) * outer * 7.0,
+                           14.0 * outer);
+    float3 l = normalize(keyPos - float3(centred, 0.0));
+    float3 h = normalize(l + v);
+
+    // Same material as the wheel: only the geometry differs.
+    const float roughness = 0.42;
+    float ndotv = saturate(dot(n, v));
+    float ndotl = saturate(dot(n, l));
+    float3 F = fresnelRough(float3(0.050), ndotv, roughness);
+
+    float3 albedo = srgbToLinear(float3(0.914, 0.918, 0.929));
+
+    const float wrap = 0.48;
+    float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
+    float3 ambient = studioFar(n, light) * 0.34;
+    float3 colour = albedo * (ambient + 0.80 * diffuse) * (1.0 - F);
+    colour += studioFar(reflect(-v, n), light) * F * 0.55;
+    colour += ggx(n, h, roughness) * ndotl * F * 0.35;
+
+    // Occlusion around the base, where it meets the wheel.
+    colour *= 1.0 - 0.16 * smoothstep(0.82, 1.0, t);
+
+    // Pressing sinks it: the crown flattens and the base occlusion deepens
+    // rather than the whole cap turning grey.
+    colour *= 1.0 - pressed * (0.05 + 0.16 * smoothstep(0.55, 1.0, t));
+
+    colour = linearToSRGB(shoulder(colour));
+    colour += (grain(position * 2.0) - 0.5) * 0.009;
+
+    return half4(half3(saturate(colour)), 1.0) * half(coverage);
+}
+
+// MARK: - Screen glass
+
+[[ stitchable ]] half4 screenGlass(
+    float2 position,
+    half4 source,
+    float2 size,
+    float sheen
+) {
+    float2 uv = position / max(size, float2(1.0));
+
+    float band = uv.x * 0.72 + uv.y * 0.62;
+    float highlight = exp(-pow((band - sheen) * 2.6, 2.0)) * 0.13;
+    highlight += exp(-pow((band - sheen - 0.30) * 7.0, 2.0)) * 0.05;
+
+    float2 edge = min(uv, 1.0 - uv);
+    float vignette = smoothstep(0.0, 0.055, min(edge.x, edge.y));
+
+    half3 colour = source.rgb * half(mix(0.90, 1.0, vignette));
+    colour += half3(half(highlight));
+
+    return half4(colour, source.a);
+}

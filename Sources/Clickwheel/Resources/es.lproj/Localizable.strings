@@ -1,0 +1,73 @@
+/* Menús */
+"menu.music" = "Música";
+"menu.extras" = "Extras";
+"menu.settings" = "Ajustes";
+"menu.shuffle_songs" = "Aleatorio";
+"menu.now_playing" = "Reproduciendo";
+"menu.playlists" = "Listas";
+"menu.songs" = "Canciones";
+"menu.clock" = "Reloj";
+"menu.brick" = "Brick";
+"menu.loading" = "Cargando…";
+"menu.shuffle" = "Aleatorio";
+"menu.repeat" = "Repetir";
+"menu.clicker" = "Clic";
+"menu.haptics" = "Hápticos";
+"menu.backlight" = "Retroiluminación";
+"menu.actual_size" = "Tamaño real";
+"menu.float" = "Siempre visible";
+"menu.about" = "Información";
+
+/* Títulos */
+"title.ipod" = "iPod";
+"title.now_playing" = "Reproduciendo";
+
+/* Valores */
+"common.on" = "Sí";
+"common.off" = "No";
+"repeat.off" = "No";
+"repeat.all" = "Todo";
+"repeat.one" = "Una";
+"shuffle.off" = "No";
+"shuffle.songs" = "Canciones";
+"backlight.always" = "Siempre";
+"backlight.seconds" = "%d segundos";
+
+/* Reproduciendo */
+"now.nothing" = "Sin reproducir";
+"now.of" = "%1$d de %2$d";
+"now.scrubbing" = "Buscar";
+
+/* Información */
+"about.playlists" = "Listas";
+"about.songs" = "Canciones";
+"about.source" = "Origen";
+"about.model" = "Modelo";
+"about.version" = "Versión";
+"about.note" = "Clickwheel";
+
+/* Brick */
+"brick.won" = "Has ganado";
+"brick.over" = "Fin del juego";
+
+/* Errores */
+"error.not_authorised" = "Sin acceso";
+"error.not_authorised.hint" = "Permite el acceso en Ajustes del Sistema › Privacidad y seguridad › Automatización.";
+"error.unavailable" = "Sin música";
+"error.no_favourites" = "Sin favoritos";
+"error.no_favourites.hint" = "Marca canciones con la estrella en Apple Music y aparecerán aquí.";
+"error.music_missing" = "No se ha podido acceder a Música.";
+"error.music_not_running" = "Música no se está ejecutando.";
+
+/* Accesibilidad */
+"a11y.wheel" = "Rueda de clic";
+"a11y.select" = "Seleccionar";
+"a11y.hold" = "Interruptor de bloqueo";
+"a11y.hold_on" = "Bloqueo activado";
+"a11y.battery" = "Batería al %d por ciento";
+"a11y.elapsed" = "%1$@ de %2$@";
+"a11y.starting" = "iPod arrancando";
+"a11y.brick" = "Juego Brick";
+"a11y.score" = "Puntuación %d";
+
+"menu.hold" = "Bloqueo";

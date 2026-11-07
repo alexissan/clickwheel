@@ -4,9 +4,9 @@ A hyperrealistic 5th-generation iPod that lives on your Mac and plays your starr
 
 The wheel actually works. Spin it with your thumb, it ticks, and the trackpad taps back.
 
-[![Thirty seconds of Clickwheel: boot, browse, play, wheel volume, the scrubber, Hold, and the backlight falling asleep](docs/demo.gif)](docs/demo.mov)
+https://github.com/user-attachments/assets/790ae6d5-335c-4889-b640-62ddf30e9761
 
-*Thirty seconds, recorded by the app itself — [full quality](docs/demo.mov).*
+*Thirty seconds, recorded by the app itself: `CLICKWHEEL_DEMO=demo.mov` scripts the tour and writes the frames.*
 
 ![Clickwheel](docs/hero.png)
 

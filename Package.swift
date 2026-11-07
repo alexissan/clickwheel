@@ -4,7 +4,8 @@ import PackageDescription
 let package = Package(
     name: "Clickwheel",
     defaultLocalization: "en",
-    platforms: [.macOS(.v14)],
+    // 15 for `.plain` window style; see the note in Main.swift.
+    platforms: [.macOS(.v15)],
     targets: [
         // Typed ScriptingBridge interface to Music.app, generated from its sdef.
         .target(

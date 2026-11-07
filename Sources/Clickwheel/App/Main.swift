@@ -8,6 +8,10 @@ struct ClickwheelApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {
+        // `.plain`, not `.hiddenTitleBar`: hiding the titlebar only empties
+        // it — the titled frame itself remains, and on macOS 26 that frame
+        // paints a bezel hairline along its top edge that no amount of
+        // subview-hiding can reach. A plain window has no frame to paint.
         WindowGroup {
             RootView()
                 .environment(delegate.services.device)
@@ -16,7 +20,7 @@ struct ClickwheelApp: App {
                 .environment(delegate.services.navigator)
                 .environment(delegate.services.brick)
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowStyle(.plain)
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .newItem) {}

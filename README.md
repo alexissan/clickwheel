@@ -53,7 +53,7 @@ It looks for your starred playlist by name across the locales Apple ships it in,
 
 ## Requirements
 
-macOS 14+, an Apple Music subscription, and Xcode's Metal toolchain:
+macOS 15+, an Apple Music subscription, and Xcode's Metal toolchain:
 
 ```bash
 xcodebuild -downloadComponent MetalToolchain

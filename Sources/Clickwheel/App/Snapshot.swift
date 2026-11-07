@@ -63,6 +63,9 @@ enum Snapshot {
                   let frame = window.contentView?.superview
             else { exit(1) }
             print("styleMask=\(window.styleMask) titlebarSeparator=\(window.titlebarSeparatorStyle.rawValue)")
+            print("class=\(type(of: window)) canBecomeKey=\(window.canBecomeKey) "
+                + "isKey=\(window.isKeyWindow) "
+                + "firstResponder=\(window.firstResponder.map { String(describing: type(of: $0)) } ?? "nil")")
             @MainActor func walk(_ view: NSView, _ depth: Int) {
                 print(String(repeating: "  ", count: depth)
                     + "\(type(of: view)) frame=\(view.frame) hidden=\(view.isHidden) alpha=\(view.alphaValue)")

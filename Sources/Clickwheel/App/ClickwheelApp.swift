@@ -13,9 +13,10 @@ struct RootView: View {
     /// `sheen` so the plastic and the glass agree about where the room is.
     @State private var light: CGPoint = .zero
     @State private var height: CGFloat = 560
-    /// Keyboard control only reaches `onKeyPress` while this view holds focus,
-    /// and nothing else in the window is focusable to hand it over.
-    @FocusState private var hasKeyboardFocus: Bool
+    /// Keyboard input comes through a local event monitor, not `onKeyPress`:
+    /// the `.plain` window is borderless and `canBecomeKey` is false, so no
+    /// view in it can ever hold keyboard focus.
+    @State private var keys = KeyMonitor()
 
     var body: some View {
         IPodBody(height: height, sheen: sheen, light: light)
@@ -24,11 +25,8 @@ struct RootView: View {
                 configure(window)
             })
             .task { await start() }
-            .focusable()
-            .focusEffectDisabled()
-            .focused($hasKeyboardFocus)
-            .onKeyPress(action: handleKey)
-            .onAppear { hasKeyboardFocus = true }
+            .onAppear { keys.start { handleKey($0) } }
+            .onDisappear { keys.stop() }
     }
 
     /// Room around the body for the drop shadow to render into; the window
@@ -61,36 +59,36 @@ struct RootView: View {
 
     // MARK: - Keyboard
 
-    /// Full keyboard control, which is also what makes the device usable with
-    /// VoiceOver and without a pointing device.
-    private func handleKey(_ press: KeyPress) -> KeyPress.Result {
+    /// Full keyboard control, which is also what makes the device usable
+    /// without a pointing device. Returns true when the key was consumed.
+    private func handleKey(_ token: String) -> Bool {
         // H has to survive Hold, or switching Hold on from Settings would
         // strand the user: the wheel is dead, so the menu that turned it on is
         // no longer reachable to turn it off.
-        let unlocks = press.key == .escape || press.characters.lowercased() == "h"
-        guard !device.isHeld || unlocks else { return .ignored }
+        let unlocks = token == "escape" || token == "h"
+        guard !device.isHeld || unlocks else { return false }
 
-        switch press.key {
-        case .upArrow:
+        switch token {
+        case "up":
             navigator.scroll(by: -1)
-        case .downArrow:
+        case "down":
             navigator.scroll(by: 1)
-        case .return, .space:
+        case "return", "space", "right":
             navigator.pressSelect()
-        case .leftArrow, .escape:
+        case "left", "escape":
             navigator.pressMenu()
-        case .rightArrow:
-            navigator.pressSelect()
+        case "p":
+            navigator.pressPlayPause()
+        case "n":
+            navigator.pressNext()
+        case "b":
+            navigator.pressPrevious()
+        case "h":
+            device.isHeld.toggle()
         default:
-            switch press.characters.lowercased() {
-            case "p": navigator.pressPlayPause()
-            case "n": navigator.pressNext()
-            case "b": navigator.pressPrevious()
-            case "h": device.isHeld.toggle()
-            default: return .ignored
-            }
+            return false
         }
-        return .handled
+        return true
     }
 
     // MARK: - Window
@@ -171,6 +169,43 @@ struct RootView: View {
         // Same signal drives the plastic's key light, so body and glass move
         // together rather than the reflection sliding over a static object.
         light = CGPoint(x: (x - 0.5) * 0.9, y: (y - 0.5) * 0.6)
+    }
+}
+
+/// Keyboard input for a window that can never be key.
+///
+/// SwiftUI's `.plain` window is borderless, and its `canBecomeKey` is false,
+/// so `onKeyPress` never fires — but key events still reach the application
+/// while it is active, where a local monitor can take them. Consuming handled
+/// keys also keeps the system from beeping at every press.
+@MainActor
+final class KeyMonitor {
+    private var monitor: Any?
+
+    /// `onKey` gets a normalised token ("up", "return", "p", …) and returns
+    /// whether it consumed the key.
+    func start(onKey: @escaping (String) -> Bool) {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let token: String
+            switch event.keyCode {
+            case 126: token = "up"
+            case 125: token = "down"
+            case 123: token = "left"
+            case 124: token = "right"
+            case 36, 76: token = "return"
+            case 53: token = "escape"
+            case 49: token = "space"
+            default: token = event.charactersIgnoringModifiers?.lowercased() ?? ""
+            }
+            let handled = MainActor.assumeIsolated { onKey(token) }
+            return handled ? nil : event
+        }
+    }
+
+    func stop() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
     }
 }
 

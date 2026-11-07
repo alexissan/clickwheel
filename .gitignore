@@ -11,3 +11,6 @@ Sources/MusicBridge/include/Music.h
 
 # Compiled from Sources/Clickwheel/Shaders/ipod.metal on every build.
 Sources/Clickwheel/Resources/Clickwheel.metallib
+
+# Local before/after render scratch.
+compare/

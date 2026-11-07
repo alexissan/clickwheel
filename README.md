@@ -6,11 +6,19 @@ The wheel actually works. Spin it with your thumb, it ticks, and the trackpad ta
 
 ![Clickwheel](docs/hero.png)
 
+<p>
+  <img src="docs/nowplaying.png" width="24%" alt="Now Playing" />
+  <img src="docs/volume.png" width="24%" alt="Volume, on the wheel" />
+  <img src="docs/artists.png" width="24%" alt="Artists" />
+  <img src="docs/settings.png" width="24%" alt="Settings" />
+</p>
+
 ```bash
 ./Scripts/build_app.sh release && open build/Clickwheel.app
 ```
 
 Drag a circle on the wheel or scroll over it · tap the wheel edges for **MENU** / **⏭** / **⏯** / **⏮** · centre to select
+On Now Playing the wheel is the **volume**; press the centre button to arm the **scrubber**, exactly like the hardware
 Keyboard: **↑ ↓** scroll · **⏎** select · **esc** back · **P** play/pause · **N** / **B** next/back · **H** hold
 
 ---
@@ -22,6 +30,14 @@ Every dimension comes from the real device — 103.5 × 61.8 mm, a 38.2 mm wheel
 The body has no geometry. SwiftUI's `colorEffect` hands a shader a pixel position and nothing else, so each material reconstructs an implicit surface from a signed distance field, derives a normal from it, and lights that. The edge roll-off, the Fresnel rim, the specular and the moulded well the wheel sits in all fall out of the same field.
 
 The screen is not an impression of the software — it is measured. Apple's October 2005 *Fifth Gen iPod Features Guide* contains genuine 320×240 framebuffer captures, and the menu grid is taken from them: a 24px status bar over nine 24px rows, cap-height-12 semibold type, an 11px text inset, pure white behind it. The numbers self-check — 24 + 9×24 = 240.
+
+And the framebuffer is not the panel. The UI draws against ideal values, then a shader applies what the physical LCD did to them: blacks lifted to a cool dark grey, white that never reaches paper, and the pixel grid of a 160 ppi panel — drawn on the true 320×240 boundaries and faded out at sizes where it could only moiré. When the backlight times out the screen doesn't go dark; it drops to the pale grey-green of a transflective panel running on room light, which is what the real one did. Going dark is what a powered-off device does.
+
+## Faithful behaviour
+
+The wheel does what the 2005 firmware did, not what a 2024 app would guess. On Now Playing it adjusts volume — the bar swaps for the volume bar while it turns — and the centre button arms the scrubber, diamond and all, which reverts to the progress bar after a few idle seconds. Previous restarts the song unless pressed within the first three seconds. Hold locks everything but the key that frees you. The battery mirrors the Mac's own, bolt included while it charges.
+
+Music browses like an iPod, too: Playlists, Artists, Albums and Songs, all drawn from your starred playlist, each level remembering its own selection as you back out.
 
 ## The interesting bug
 

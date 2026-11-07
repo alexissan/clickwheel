@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clickwheel</title>
+<meta name="description" content="A hyperrealistic 5th-generation iPod for macOS that plays your starred Apple Music songs. The wheel actually works.">
+<meta property="og:title" content="Clickwheel">
+<meta property="og:description" content="A hyperrealistic 5th-generation iPod for macOS. The wheel actually works.">
+<meta property="og:image" content="https://alexissan.github.io/clickwheel/hero.png">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --ink: #1c1e22;
+    --dim: #5c636e;
+    --rule: #e2e5ea;
+    --aqua-top: #5fa2ee;
+    --aqua-bottom: #2464d2;
+    --code-bg: #14161a;
+    --code-ink: #e8eaf0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --panel: #181b21;
+      --ink: #e8eaf0;
+      --dim: #9aa2af;
+      --rule: #272b33;
+      --code-bg: #0a0b0e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 0 20px 96px; }
+
+  header { text-align: center; padding: 72px 0 8px; }
+  h1 {
+    font-size: 44px; letter-spacing: -0.02em; margin: 0 0 10px;
+  }
+  .tagline { color: var(--dim); font-size: 20px; max-width: 560px; margin: 0 auto; }
+  .tagline strong { color: var(--ink); font-weight: 600; }
+
+  .hero { display: flex; justify-content: center; padding: 40px 0 8px; }
+  .hero img { width: min(380px, 78vw); height: auto; }
+
+  .controls {
+    text-align: center; color: var(--dim); font-size: 15px;
+    max-width: 620px; margin: 0 auto 56px;
+  }
+  .controls kbd {
+    font: 600 13px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--panel); border: 1px solid var(--rule);
+    border-bottom-width: 2px; border-radius: 5px; padding: 2px 7px;
+    color: var(--ink);
+  }
+
+  .bar {
+    height: 3px; width: 72px; margin: 56px auto;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, var(--aqua-top), var(--aqua-bottom));
+  }
+
+  h2 { font-size: 26px; letter-spacing: -0.01em; margin: 0 0 14px; }
+  section p { color: var(--dim); }
+  section p strong, section p b { color: var(--ink); }
+  section { margin: 0 0 56px; }
+
+  .grid {
+    display: grid; gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 22px 24px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .card p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.6; }
+
+  .shots {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; height: auto; }
+  .shots figcaption {
+    text-align: center; color: var(--dim); font-size: 13px; padding-top: 6px;
+  }
+
+  pre {
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: 12px; padding: 18px 22px; overflow-x: auto;
+    font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  code.inline {
+    font: 0.92em ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--panel); border: 1px solid var(--rule);
+    border-radius: 5px; padding: 1px 6px;
+  }
+
+  footer {
+    text-align: center; color: var(--dim); font-size: 14px;
+    border-top: 1px solid var(--rule); padding-top: 28px;
+  }
+  a { color: inherit; }
+  .cta {
+    display: inline-block; margin-top: 18px;
+    background: linear-gradient(to bottom, var(--aqua-top), var(--aqua-bottom));
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 16px;
+    padding: 10px 22px; border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Clickwheel</h1>
+    <p class="tagline">A hyperrealistic 5th-generation iPod that lives on your Mac and plays your starred Apple&nbsp;Music songs. <strong>The wheel actually works.</strong></p>
+    <a class="cta" href="https://github.com/alexissan/clickwheel">View on GitHub</a>
+  </header>
+
+  <div class="hero">
+    <img src="hero.png" alt="Clickwheel: a photoreal 5th-generation iPod rendered on the Mac desktop">
+  </div>
+
+  <p class="controls">
+    Drag a circle on the wheel or scroll over it · tap the edges for MENU / ⏭ / ⏯ / ⏮ · centre to select.<br>
+    On Now Playing the wheel is the <strong>volume</strong>; the centre button arms the <strong>scrubber</strong> — exactly like the hardware.<br>
+    <kbd>↑</kbd><kbd>↓</kbd> scroll &nbsp; <kbd>⏎</kbd> select &nbsp; <kbd>esc</kbd> back &nbsp; <kbd>P</kbd> play &nbsp; <kbd>N</kbd>/<kbd>B</kbd> next/back &nbsp; <kbd>H</kbd> hold
+  </p>
+
+  <div class="bar"></div>
+
+  <section>
+    <h2>Built from millimetres, not mockups</h2>
+    <p>Every dimension comes from the real device — 103.5 × 61.8&nbsp;mm, a 38.2&nbsp;mm wheel centred 72.8&nbsp;mm down, a 2.5″ 320×240 panel — and everything on screen derives from those millimetres. That is what makes <strong>Settings › Actual Size</strong> possible: it reads your display's true physical size and renders the iPod life-sized, so it matches a real one held against the screen.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>No geometry, only light</h3>
+        <p>The body is a signed distance field lit in a Metal shader: the clearcoat Fresnel rim, the chrome hairline, the parting seam and the moulded well the wheel sits in all fall out of one implicit surface.</p>
+      </div>
+      <div class="card">
+        <h3>A panel, not a framebuffer</h3>
+        <p>The UI draws against Apple's own 320×240 captures, then a shader applies what the LCD did to them: lifted blacks, not-quite-paper white, and the pixel grid of a 160&nbsp;ppi panel on its true boundaries.</p>
+      </div>
+      <div class="card">
+        <h3>2005 firmware behaviour</h3>
+        <p>The wheel sets volume on Now Playing, Select arms the diamond scrubber, Previous restarts the song after three seconds, Hold locks everything, and the backlight fades to transflective grey — not black.</p>
+      </div>
+      <div class="card">
+        <h3>It ticks back</h3>
+        <p>The clicker is synthesised the way the original made it — a noise transient through a 1.6&nbsp;kHz resonance, not a sample — and a Force Touch trackpad answers every detent.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your starred songs, browsed like 2005</h2>
+    <p>Playlists, Artists, Albums and Songs, all drawn from your Apple Music favourites. Music.app runs hidden as the audio engine while Clickwheel owns the queue, so shuffle, repeat and the "3 of 35" counter behave the way the iPod defined them.</p>
+    <div class="shots">
+      <figure><img src="nowplaying.png" alt="Now Playing screen" loading="lazy"><figcaption>Now Playing</figcaption></figure>
+      <figure><img src="volume.png" alt="Volume bar while turning the wheel" loading="lazy"><figcaption>Volume, on the wheel</figcaption></figure>
+      <figure><img src="artists.png" alt="Artists menu" loading="lazy"><figcaption>Artists</figcaption></figure>
+      <figure><img src="settings.png" alt="Settings menu" loading="lazy"><figcaption>Settings</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Run it</h2>
+    <p>macOS 14+, an Apple Music subscription, and Xcode's Metal toolchain. First launch asks permission to control Music.app.</p>
+    <pre>git clone https://github.com/alexissan/clickwheel
+cd clickwheel
+./Scripts/build_app.sh release &amp;&amp; open build/Clickwheel.app</pre>
+  </section>
+
+  <footer>
+    MIT licensed · Built with SwiftUI, Metal and ScriptingBridge ·
+    <a href="https://github.com/alexissan/clickwheel">github.com/alexissan/clickwheel</a>
+  </footer>
+</main>
+</body>
+</html>

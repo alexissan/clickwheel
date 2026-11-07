@@ -53,9 +53,10 @@ extension View {
         modifier(ButtonMaterial(size: size, pressed: pressed, light: light))
     }
 
-    /// Specular sheen over the LCD, offset by where the window sits.
-    func screenGlassMaterial(size: CGSize, sheen: CGFloat) -> some View {
-        modifier(GlassMaterial(size: size, sheen: sheen))
+    /// The LCD panel response and pixel grid, plus the specular sheen over the
+    /// glass, offset by where the window sits. `unit` is points per LCD pixel.
+    func screenGlassMaterial(size: CGSize, sheen: CGFloat, unit: CGFloat) -> some View {
+        modifier(GlassMaterial(size: size, sheen: sheen, unit: unit))
     }
 }
 
@@ -144,13 +145,18 @@ private struct ButtonMaterial: ViewModifier {
 private struct GlassMaterial: ViewModifier {
     let size: CGSize
     let sheen: CGFloat
+    let unit: CGFloat
+
+    @Environment(\.displayScale) private var displayScale
 
     func body(content: Content) -> some View {
         if let library = Materials.library {
             content.colorEffect(
                 library.screenGlass(
                     .float2(size.width, size.height),
-                    .float(sheen)
+                    .float(sheen),
+                    .float(unit),
+                    .float(1 / max(displayScale, 1))
                 )
             )
         } else {

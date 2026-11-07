@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(DeviceState.self) private var device
     @Environment(Navigator.self) private var navigator
     @Environment(Library.self) private var library
+    @Environment(Player.self) private var player
 
     @State private var sheen: CGFloat = 0.35
     /// Key-light position, -1...1. Shares the window-position signal with
@@ -38,6 +39,7 @@ struct RootView: View {
 
     private func start() async {
         await library.start()
+        await player.syncVolume()
 
         if let failure = library.loadFailure {
             navigator.showMessage(

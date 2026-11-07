@@ -19,9 +19,6 @@ enum Metrics {
     /// predates continuous-curvature corners, and a squircle here reads modern.
     static let cornerRadius: CGFloat = 5.9
 
-    /// Aspect ratio of the whole device, used to size the window.
-    static var aspectRatio: CGFloat { bodyWidth / bodyHeight }
-
     // MARK: - Screen
 
     /// 2.5" diagonal at 4:3 — 320×240 physical pixels.
@@ -32,14 +29,9 @@ enum Metrics {
     /// more than double, which is most of why the black frame read as a heavy
     /// bezel rather than a window cut into the plastic.
     static let screenTop: CGFloat = 5.2
-    /// The lit rectangle has square corners. Rounding the pixels clips the
-    /// light and thickens the apparent black at each corner — round the
-    /// *opening* instead, via `windowCornerRadius`.
+    /// The lit rectangle has square corners: rounding the pixels clips the
+    /// light and thickens the apparent black at each corner.
     static let screenCornerRadius: CGFloat = 0
-    /// Black surround between the plastic opening and the active area.
-    /// Opening measures 52.8 × 40.1 mm against a 50.8 × 38.1 active area.
-    static let windowBorder: CGFloat = 1.0
-    static let windowCornerRadius: CGFloat = 1.0
 
     /// The LCD's native pixel grid. Screen content is laid out in these units
     /// and scaled up, so text lands on the same proportions the real device

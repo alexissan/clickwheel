@@ -73,9 +73,16 @@ struct IPodBody: View {
                 .clipShape(
                     RoundedRectangle(cornerRadius: Metrics.screenCornerRadius * scale, style: .continuous)
                 )
+                // Rasterise the whole panel before the shader. Without this,
+                // text runs are composited separately from the layer the
+                // shader filters, and every one of them keeps its own
+                // unfiltered white box — invisible while the shader only
+                // brightened, glaring once it darkens white by any amount.
+                .drawingGroup()
                 .screenGlassMaterial(
                     size: CGSize(width: screenWidth, height: screenHeight),
-                    sheen: sheen
+                    sheen: sheen,
+                    unit: unit
                 )
         }
         .frame(width: screenWidth + bezelInset * 2, height: screenHeight + bezelInset * 2)
@@ -99,13 +106,13 @@ struct IPodBody: View {
             onScroll: handleScroll,
             onPress: handlePress,
             onSelect: handleSelect,
-            onIdle: { navigator.endScrubIfNeeded() }
+            onIdle: { navigator.wheelIdled() }
         )
         .frame(width: diameter, height: diameter)
         .onAppear {
             scrollReader.start(
                 onScroll: { handleScroll($0) },
-                onIdle: { navigator.endScrubIfNeeded() }
+                onIdle: { navigator.wheelIdled() }
             )
         }
         .onDisappear { scrollReader.stop() }

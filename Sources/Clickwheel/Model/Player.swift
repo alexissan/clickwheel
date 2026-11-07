@@ -54,6 +54,41 @@ final class Player {
     }
     var scrubTarget: TimeInterval = 0
 
+    /// True once Select has armed the scrubber on Now Playing. Until then the
+    /// wheel adjusts volume, which is what the real device does — scrubbing by
+    /// default was the single biggest behavioural tell against it.
+    var isScrubArmed = false
+
+    // MARK: - Volume
+
+    /// Output volume 0...1, mirrored from the backend's.
+    private(set) var volume: Double = 0.5
+    /// True briefly while the wheel is changing the volume; Now Playing swaps
+    /// the progress bar for the volume bar while it is, like the real screen.
+    private(set) var isAdjustingVolume = false
+
+    /// Reads the backend's current volume, so the first wheel turn nudges the
+    /// real level instead of jumping to a stale default.
+    func syncVolume() async {
+        volume = await source.volume()
+    }
+
+    /// One wheel detent of volume. The real wheel sweeps the whole range in
+    /// about half a revolution, which 1/40th per detent reproduces.
+    func adjustVolume(by steps: Int) {
+        volume = min(1, max(0, volume + Double(steps) * 0.025))
+        isAdjustingVolume = true
+        let target = volume
+        Task { await source.setVolume(target) }
+    }
+
+    /// The wheel has been still for a moment: put the volume bar away and
+    /// commit any scrub in flight.
+    func wheelIdled() {
+        isAdjustingVolume = false
+        isScrubbing = false
+    }
+
     // MARK: - Queue
 
     private let source: MusicSource

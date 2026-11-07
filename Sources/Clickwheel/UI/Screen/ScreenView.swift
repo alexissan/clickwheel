@@ -79,11 +79,15 @@ struct ScreenView: View {
             // `.brightness()`/`.saturation()`. Those are colour filters, which
             // push the whole screen into an offscreen layer — that inverted the
             // apparent contrast when dimmed and left a pale box behind every
-            // run of text. A plain overlay dims exactly like a panel losing its
-            // backlight, and leaves text rendering untouched.
+            // run of text. A plain overlay leaves text rendering untouched.
+            //
+            // The wash is grey-green, not black: the 5G panel is transflective,
+            // so with the backlight off it reads by ambient light — a pale,
+            // low-contrast slate, the way an unlit Game Boy screen looks. Going
+            // dark is what a *powered-off* device does, and it read as a crash.
             Rectangle()
-                .fill(.black)
-                .opacity(device.isBacklightOn ? 0 : 0.58)
+                .fill(Palette.unlitWash)
+                .opacity(device.isBacklightOn ? 0 : 0.52)
                 .allowsHitTesting(false)
         }
         .environment(\.lcdUnit, unit)
@@ -198,6 +202,16 @@ struct StatusBar: View {
                     .fill(fill)
                     .frame(width: max(0, 18 * unit * device.batteryLevel), height: 10 * unit)
                     .padding(.leading, unit)
+
+                // The real device overlays a bolt on the meter while it charges.
+                // Only while genuinely charging: desktop Macs report no battery
+                // and show a full, boltless meter instead.
+                if device.isCharging, device.batteryLevel < 0.97 {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 8 * unit, weight: .bold))
+                        .foregroundStyle(Palette.batteryOutline)
+                        .frame(width: 20 * unit)
+                }
             }
             RoundedRectangle(cornerRadius: 0.5 * unit)
                 .fill(Palette.batteryOutline)
@@ -218,6 +232,9 @@ struct StatusBar: View {
         var parts = [navigator.title]
         if device.isHeld {
             parts.append(String(localized: "a11y.hold_on", defaultValue: "Hold switch on", bundle: .module))
+        }
+        if device.isCharging, device.batteryLevel < 0.97 {
+            parts.append(String(localized: "a11y.charging", defaultValue: "Charging", bundle: .module))
         }
         parts.append(
             String(

@@ -37,12 +37,12 @@ enum Transport: Sendable {
     case stopped
     case playing
     case paused
-
-    var isPlaying: Bool { self == .playing }
 }
 
-/// Everything the Now Playing screen needs, refreshed on a timer.
-struct NowPlaying: Sendable, Equatable {
+/// Everything the Now Playing screen needs, refreshed on a timer. Artwork is
+/// deliberately not part of it — it is megabytes per track, and travels through
+/// `MusicSource.currentArtwork()` once per song change instead.
+struct NowPlaying: Sendable {
     var song: Song?
     var transport: Transport = .stopped
     /// Playhead in seconds.
@@ -50,20 +50,8 @@ struct NowPlaying: Sendable, Equatable {
     /// Index within the queue the iPod is showing, 1-based.
     var queueIndex: Int = 0
     var queueCount: Int = 0
-    /// Artwork is carried as PNG/JPEG bytes so the struct stays `Sendable` and
-    /// cheap to compare; the view layer decodes and caches it.
-    var artworkData: Data?
 
     static let idle = NowPlaying()
-
-    static func == (lhs: NowPlaying, rhs: NowPlaying) -> Bool {
-        lhs.song == rhs.song
-            && lhs.transport == rhs.transport
-            && Int(lhs.position) == Int(rhs.position)
-            && lhs.queueIndex == rhs.queueIndex
-            && lhs.queueCount == rhs.queueCount
-            && lhs.artworkData?.count == rhs.artworkData?.count
-    }
 }
 
 /// Errors surfaced to the screen. The iPod shows these as a full-screen
@@ -106,10 +94,10 @@ enum MusicSourceError: LocalizedError, Sendable {
 
 /// The contract every playback backend implements.
 ///
-/// Two conform: `MusicAppSource` (ScriptingBridge onto Music.app, works today
-/// with no developer-portal setup) and `MusicKitSource` (native in-process
-/// streaming, needs the MusicKit service enabled on the App ID). The app picks
-/// one at launch and the rest of the code never knows which it got.
+/// One ships today: `MusicAppSource`, ScriptingBridge onto Music.app, which
+/// works with no developer-portal setup. A MusicKit implementation (native
+/// in-process streaming) can be slotted in behind this protocol without the
+/// rest of the app noticing.
 ///
 /// ## Why the backend plays one song at a time
 /// Modern Music.app drops the playlist context when asked to play a specific
@@ -145,6 +133,10 @@ protocol MusicSource: AnyObject, Sendable {
     func pause() async
     /// Seek within the current song.
     func seek(to position: TimeInterval) async
+
+    /// Output volume, 0...1.
+    func volume() async -> Double
+    func setVolume(_ level: Double) async
 
     /// Current transport snapshot.
     ///

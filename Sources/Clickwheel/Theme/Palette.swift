@@ -32,8 +32,16 @@ enum Palette {
 
     /// The 5G framebuffer is pure white, flat to within a level or two across
     /// the whole panel. The warm-green cast belongs to the *monochrome* iPods
-    /// with EL backlights; this one is a neutral transflective panel.
+    /// with EL backlights; this one is a neutral transflective panel. The
+    /// panel's own response — lifted blacks, not-quite-paper white, the pixel
+    /// grid — is applied by the `screenGlass` shader, so screen content keeps
+    /// drawing against the ideal framebuffer values.
     static let screenBacklight = Color.white
+
+    /// What the transflective panel looks like running on ambient light alone:
+    /// a pale grey-green slate. Overlaid on the screen when the backlight
+    /// times out.
+    static let unlitWash = Color(red: 0.55, green: 0.57, blue: 0.53)
     static let screenInk = Color.black
     /// Kept only for the empty-artwork placeholder. The real menu UI has no
     /// grey text anywhere — every glyph is pure black.
@@ -63,7 +71,6 @@ enum Palette {
     static let batteryFillBottom = Color(red: 0.180, green: 0.620, blue: 0.070)
     static let batteryOutline = Color(red: 0.290, green: 0.298, blue: 0.314)
 
-    /// Progress bar fill on Now Playing.
-    static let progressFill = Color(red: 0.298, green: 0.518, blue: 0.831)
+    /// Empty-artwork placeholder on Now Playing.
     static let progressTrack = Color(red: 0.808, green: 0.816, blue: 0.827)
 }

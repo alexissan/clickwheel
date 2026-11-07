@@ -23,7 +23,7 @@ struct NowPlayingView: View {
                 .offset(x: 14 * unit, y: 36 * unit)
 
             songInfo(for: state)
-            progress(for: state)
+            bar(for: state)
             times(for: state)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -100,23 +100,72 @@ struct NowPlayingView: View {
         }
     }
 
-    // MARK: - Progress
+    // MARK: - The bar
+
+    /// One slot, three meanings, exactly like the real screen: the progress
+    /// bar by default, the volume bar while the wheel is turning, and the
+    /// scrubber with its diamond once Select has armed it.
+    @ViewBuilder
+    private func bar(for state: NowPlaying) -> some View {
+        if player.isAdjustingVolume {
+            volumeBar
+        } else {
+            progress(for: state)
+        }
+    }
 
     private func progress(for state: NowPlaying) -> some View {
         let duration = state.song?.duration ?? 0
         let fraction = duration > 0 ? min(1, max(0, state.position / duration)) : 0
 
-        return ZStack(alignment: .leading) {
+        return capsuleBar(fraction: fraction)
+            .overlay(alignment: .leading) {
+                // The armed scrubber carries a diamond at the playhead.
+                if player.isScrubArmed {
+                    Rectangle()
+                        .fill(Palette.screenInk)
+                        .frame(width: 8 * unit, height: 8 * unit)
+                        .rotationEffect(.degrees(45))
+                        .offset(x: (6 + 266 * fraction) * unit, y: 0)
+                        .accessibilityHidden(true)
+                }
+            }
+            .offset(x: 19 * unit, y: 158 * unit)
+    }
+
+    private var volumeBar: some View {
+        capsuleBar(fraction: player.volume)
+            .overlay(alignment: .leading) {
+                Image(systemName: "speaker.fill")
+                    .font(.system(size: 8 * unit))
+                    .foregroundStyle(Palette.screenInk)
+                    .offset(x: -12 * unit)
+                    .accessibilityHidden(true)
+            }
+            .offset(x: 19 * unit, y: 158 * unit)
+            .accessibilityLabel(
+                String(
+                    format: String(
+                        localized: "a11y.volume",
+                        defaultValue: "Volume %d percent",
+                        bundle: .module
+                    ),
+                    Int(player.volume * 100)
+                )
+            )
+    }
+
+    private func capsuleBar(fraction: Double) -> some View {
+        ZStack(alignment: .leading) {
             Capsule().fill(Self.trackGradient)
             Capsule()
                 .fill(Self.fillGradient)
-                .frame(width: 282 * unit * fraction)
+                .frame(width: 282 * unit * min(1, max(0, fraction)))
         }
         .frame(width: 282 * unit, height: 14 * unit)
         .overlay {
             Capsule().strokeBorder(Color(white: 0.718), lineWidth: max(0.5, unit))
         }
-        .offset(x: 19 * unit, y: 158 * unit)
     }
 
     /// Glossy Aqua capsule — a bright band across the upper half, not a flat fill.

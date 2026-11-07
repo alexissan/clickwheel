@@ -63,7 +63,7 @@ struct AboutView: View {
                 library.totalSongs > 0 ? "\(library.totalSongs)" : "—")
             row(String(localized: "about.source", defaultValue: "Source", bundle: .module), backendName)
             row(String(localized: "about.model", defaultValue: "Model", bundle: .module), "M9829")
-            row(String(localized: "about.version", defaultValue: "Version", bundle: .module), "1.0")
+            row(String(localized: "about.version", defaultValue: "Version", bundle: .module), "1.1")
 
             Spacer(minLength: 0)
 

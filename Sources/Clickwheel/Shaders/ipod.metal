@@ -351,25 +351,51 @@ float grain(float2 p) {
     return half4(half3(saturate(colour)), 1.0) * half(coverage);
 }
 
-// MARK: - Screen glass
+// MARK: - LCD panel and glass
 
 [[ stitchable ]] half4 screenGlass(
     float2 position,
     half4 source,
     float2 size,
-    float sheen
+    float sheen,
+    float unit,            // points per LCD pixel, for the pixel grid
+    float pointsPerPixel
 ) {
     float2 uv = position / max(size, float2(1.0));
+
+    // The framebuffer is ideal — pure black ink on pure white — but the panel
+    // is not. A transflective TN panel lifts black to a cool dark grey and
+    // never quite reaches paper white; mapping the framebuffer through the
+    // panel's real range is most of what separates "LCD" from "PDF".
+    const float3 panelInk   = float3(0.075, 0.082, 0.104);
+    const float3 panelWhite = float3(0.968, 0.973, 0.984);
+    float3 colour = panelInk + float3(source.rgb) * (panelWhite - panelInk);
+
+    // Pixel grid. 320×240 across 2.5" is ~160 ppi, coarse enough that the
+    // gaps between pixels are plainly visible on the real device. Drawn in
+    // LCD units so lines land on true pixel boundaries, and faded out when a
+    // cell spans too few device pixels to draw cleanly — a grid below that
+    // threshold is moiré, not realism.
+    float devicePerCell = unit / max(pointsPerPixel, 1e-3);
+    float gridStrength = 0.10 * smoothstep(1.8, 4.5, devicePerCell);
+    if (gridStrength > 0.001) {
+        float2 cell = fract(position / max(unit, 1e-3));
+        float2 border = min(cell, 1.0 - cell);              // 0 on the boundary
+        float line = pointsPerPixel * 0.45 / max(unit, 1e-3);
+        float gap = 1.0 - smoothstep(0.0, line * 2.0, min(border.x, border.y));
+        colour *= 1.0 - gridStrength * gap;
+    }
 
     float band = uv.x * 0.72 + uv.y * 0.62;
     float highlight = exp(-pow((band - sheen) * 2.6, 2.0)) * 0.13;
     highlight += exp(-pow((band - sheen - 0.30) * 7.0, 2.0)) * 0.05;
 
+    // The bezel shades the panel's outermost pixels.
     float2 edge = min(uv, 1.0 - uv);
     float vignette = smoothstep(0.0, 0.055, min(edge.x, edge.y));
 
-    half3 colour = source.rgb * half(mix(0.90, 1.0, vignette));
-    colour += half3(half(highlight));
+    colour *= mix(0.90, 1.0, vignette);
+    colour += highlight;
 
-    return half4(colour, source.a);
+    return half4(half3(saturate(colour)), source.a);
 }

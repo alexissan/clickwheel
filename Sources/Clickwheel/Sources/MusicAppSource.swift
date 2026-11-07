@@ -86,21 +86,6 @@ final class MusicAppSource: MusicSource, @unchecked Sendable {
         try? await Task.sleep(for: .milliseconds(600))
     }
 
-    /// Temporary: reports which batched property reads actually come back.
-    func diagnose() async {
-        try? await onQueue {
-            guard let app = self.app, let all = app.playlists() else {
-                print("DIAG: no app/playlists"); return
-            }
-            print("DIAG: raw playlist count = \(all.count)")
-            for property in ["name", "persistentID", "specialKind", "duration"] {
-                let raw = all.array(byApplying: NSSelectorFromString(property)) as? [Any] ?? []
-                let sample = raw.first.map { "\(type(of: $0)) = \($0)" } ?? "nil"
-                print("DIAG: \(property) -> \(raw.count) values, first: \(sample)")
-            }
-        }
-    }
-
     // MARK: - Library
 
     func playlists() async throws -> [SongList] {
@@ -220,6 +205,18 @@ final class MusicAppSource: MusicSource, @unchecked Sendable {
         try? await onQueue { self.app?.playerPosition = position }
     }
 
+    func volume() async -> Double {
+        (try? await onQueue {
+            Double(self.app?.soundVolume ?? 50) / 100
+        }) ?? 0.5
+    }
+
+    func setVolume(_ level: Double) async {
+        try? await onQueue {
+            self.app?.soundVolume = Int((min(1, max(0, level)) * 100).rounded())
+        }
+    }
+
     /// Puts back the shuffle and repeat settings we borrowed.
     ///
     /// Leaving someone's library on repeat-one after quitting would be a
@@ -325,8 +322,7 @@ final class MusicAppSource: MusicSource, @unchecked Sendable {
     private static let specialKindNone: FourCharCode = 0x6B4E_6F6E
 
     /// Apple localises the starred playlist's name, and ScriptingBridge exposes
-    /// no flag for it, so match the known translations. `Settings › Favourites`
-    /// lets the user override this when a locale is missing.
+    /// no flag for it, so match the known translations.
     private static let favouriteNames: Set<String> = [
         "favourite songs", "favorite songs",       // en-GB / en-US
         "canciones favoritas",                     // es
@@ -358,7 +354,9 @@ private extension SBElementArray {
     /// feels instant instead of taking seconds; the per-element alternative
     /// issues one round-trip per property per track.
     func values(for property: String) -> [Any] {
-        array(byApplying: NSSelectorFromString(property)) as? [Any] ?? []
+        // The ObjC return is annotated non-null but can be nil in practice when
+        // Music.app is quitting; the optional coercion keeps that from trapping.
+        (array(byApplying: NSSelectorFromString(property)) as [Any]?) ?? []
     }
 
     func strings(for property: String) -> [String] {

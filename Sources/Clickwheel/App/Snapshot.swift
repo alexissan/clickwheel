@@ -10,7 +10,8 @@ import SwiftUI
 ///     CLICKWHEEL_SNAPSHOT=/tmp/ipod.png open -W build/Clickwheel.app
 ///
 /// `CLICKWHEEL_SNAPSHOT_SCREEN` picks which screen to show: `menu` (default),
-/// `nowplaying`, `settings`, `boot`, `clock`, `about`, or `brick`.
+/// `nowplaying`, `volume`, `scrub`, `music`, `artists`, `albums`, `playlists`,
+/// `tracks`, `settings`, `boot`, `clock`, `about`, or `brick`.
 @MainActor
 enum Snapshot {
     static var requestedPath: String? {
@@ -72,7 +73,10 @@ enum Snapshot {
             services.device.dimForPreview()
         }
 
-        let height: CGFloat = 900
+        // Larger renders behave like macro photography: the LCD grid resolves
+        // the way it does when you lean into the real panel.
+        let height = ProcessInfo.processInfo.environment["CLICKWHEEL_SNAPSHOT_HEIGHT"]
+            .flatMap { Double($0) }.map { CGFloat($0) } ?? 900
         let view = IPodBody(height: height, sheen: 0.34, light: CGPoint(x: -0.12, y: -0.08))
             .environment(services.device)
             .environment(services.library)
@@ -116,7 +120,7 @@ enum Snapshot {
         switch which {
         case "boot":
             return
-        case "nowplaying":
+        case "nowplaying", "volume", "scrub":
             navigator.finishBoot()
             if let list = services.library.favourites,
                let songs = services.library.cachedSongs(in: list), !songs.isEmpty {
@@ -124,6 +128,22 @@ enum Snapshot {
                 await services.player.loadPreviewArtwork()
             }
             navigator.previewPush(.nowPlaying)
+            if which == "volume" {
+                await services.player.syncVolume()
+                services.player.adjustVolume(by: 0)
+            }
+            if which == "scrub" {
+                services.player.isScrubArmed = true
+            }
+        case "artists":
+            navigator.finishBoot()
+            navigator.previewPush(.menu(.artists))
+        case "albums":
+            navigator.finishBoot()
+            navigator.previewPush(.menu(.albums))
+        case "music":
+            navigator.finishBoot()
+            navigator.previewPush(.menu(.music))
         case "settings":
             navigator.finishBoot()
             navigator.previewPush(.menu(.settings))

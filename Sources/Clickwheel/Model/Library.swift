@@ -11,7 +11,6 @@ import Observation
 final class Library {
     private(set) var playlists: [SongList] = []
     private(set) var loadFailure: MusicSourceError?
-    private(set) var isLoading = true
 
     private var songsByList: [String: [Song]] = [:]
     private let source: MusicSource
@@ -37,19 +36,15 @@ final class Library {
             try await source.prepare()
         } catch let error as MusicSourceError {
             loadFailure = error
-            isLoading = false
             return
         } catch {
             loadFailure = .backendUnavailable(error.localizedDescription)
-            isLoading = false
             return
         }
         await load()
     }
 
     func load() async {
-        isLoading = true
-        defer { isLoading = false }
         do {
             let loaded = try await source.playlists()
             guard !loaded.isEmpty else {

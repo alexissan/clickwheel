@@ -5,7 +5,10 @@
 "menu.shuffle_songs" = "Shuffle Songs";
 "menu.now_playing" = "Now Playing";
 "menu.playlists" = "Playlists";
+"menu.artists" = "Artists";
+"menu.albums" = "Albums";
 "menu.songs" = "Songs";
+"menu.unknown" = "Unknown";
 "menu.clock" = "Clock";
 "menu.brick" = "Brick";
 "menu.loading" = "Loading…";
@@ -36,7 +39,6 @@
 /* Now Playing */
 "now.nothing" = "Not Playing";
 "now.of" = "%1$d of %2$d";
-"now.scrubbing" = "Scrub";
 
 /* About */
 "about.playlists" = "Playlists";
@@ -62,9 +64,10 @@
 /* Accessibility */
 "a11y.wheel" = "Click wheel";
 "a11y.select" = "Select";
-"a11y.hold" = "Hold switch";
 "a11y.hold_on" = "Hold switch on";
 "a11y.battery" = "Battery %d percent";
+"a11y.charging" = "Charging";
+"a11y.volume" = "Volume %d percent";
 "a11y.elapsed" = "%1$@ of %2$@";
 "a11y.starting" = "iPod starting up";
 "a11y.brick" = "Brick game";

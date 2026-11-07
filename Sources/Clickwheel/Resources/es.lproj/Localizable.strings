@@ -5,7 +5,10 @@
 "menu.shuffle_songs" = "Aleatorio";
 "menu.now_playing" = "Reproduciendo";
 "menu.playlists" = "Listas";
+"menu.artists" = "Artistas";
+"menu.albums" = "Álbumes";
 "menu.songs" = "Canciones";
+"menu.unknown" = "Desconocido";
 "menu.clock" = "Reloj";
 "menu.brick" = "Brick";
 "menu.loading" = "Cargando…";
@@ -36,7 +39,6 @@
 /* Reproduciendo */
 "now.nothing" = "Sin reproducir";
 "now.of" = "%1$d de %2$d";
-"now.scrubbing" = "Buscar";
 
 /* Información */
 "about.playlists" = "Listas";
@@ -62,9 +64,10 @@
 /* Accesibilidad */
 "a11y.wheel" = "Rueda de clic";
 "a11y.select" = "Seleccionar";
-"a11y.hold" = "Interruptor de bloqueo";
 "a11y.hold_on" = "Bloqueo activado";
 "a11y.battery" = "Batería al %d por ciento";
+"a11y.charging" = "Cargando batería";
+"a11y.volume" = "Volumen al %d por ciento";
 "a11y.elapsed" = "%1$@ de %2$@";
 "a11y.starting" = "iPod arrancando";
 "a11y.brick" = "Juego Brick";

@@ -82,6 +82,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let path = Snapshot.requestedPath {
             Task { await Snapshot.run(path: path, services: services) }
         }
+        if let path = Demo.requestedPath {
+            Task { await Demo.run(path: path, services: services) }
+        }
         Snapshot.captureWindowIfRequested()
         Snapshot.dumpWindowIfRequested()
     }

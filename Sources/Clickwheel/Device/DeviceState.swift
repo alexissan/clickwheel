@@ -81,6 +81,11 @@ final class DeviceState {
         batteryTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
+                // Cancelling makes the sleep throw immediately and `try?`
+                // swallows it — without this guard the loop runs one last
+                // refresh *after* cancellation, undoing whatever the caller
+                // cancelled the task to set.
+                guard !Task.isCancelled else { return }
                 self?.refreshBattery()
             }
         }
@@ -100,6 +105,15 @@ final class DeviceState {
     func dimForPreview() {
         sleepTask?.cancel()
         isBacklightOn = false
+    }
+
+    /// Pins the meter for snapshots and demo renders, so the captured device
+    /// doesn't inherit whatever charge the Mac happens to have.
+    func stageBatteryForPreview(_ level: Double) {
+        batteryTask?.cancel()
+        batteryTask = nil
+        batteryLevel = min(1, max(0, level))
+        isCharging = false
     }
 
     /// Called on every interaction. Lights the screen and restarts the timer.

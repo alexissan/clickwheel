@@ -116,8 +116,11 @@ echo "==> Signing"
 # A stable signing identity matters here: macOS ties the Automation permission
 # to the signature, so an ad-hoc signature that changes each build would make
 # the user re-approve access every time.
+# `|| true`: under `set -euo pipefail`, grep finding no identity would
+# otherwise abort the script here, leaving the app with only the linker's
+# signature (which fails `codesign --verify`).
 IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
-    | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/')"
+    | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/' || true)"
 
 if [ -n "$IDENTITY" ]; then
     echo "    using: $IDENTITY"

@@ -53,6 +53,26 @@ enum Snapshot {
         }
     }
 
+    /// Prints the window's AppKit view hierarchy and exits, for chasing chrome
+    /// the OS draws around the content — set `CLICKWHEEL_DUMP_WINDOW=1`.
+    static func dumpWindowIfRequested() {
+        guard ProcessInfo.processInfo.environment["CLICKWHEEL_DUMP_WINDOW"] != nil else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            guard let window = NSApp.windows.first(where: { $0.isVisible }),
+                  let frame = window.contentView?.superview
+            else { exit(1) }
+            print("styleMask=\(window.styleMask) titlebarSeparator=\(window.titlebarSeparatorStyle.rawValue)")
+            @MainActor func walk(_ view: NSView, _ depth: Int) {
+                print(String(repeating: "  ", count: depth)
+                    + "\(type(of: view)) frame=\(view.frame) hidden=\(view.isHidden) alpha=\(view.alphaValue)")
+                for sub in view.subviews { walk(sub, depth + 1) }
+            }
+            walk(frame, 0)
+            exit(0)
+        }
+    }
+
     static func run(path: String, services: AppDelegate.Services) async {
         // Same startup path the app uses, so a snapshot proves the real one.
         await services.library.start()

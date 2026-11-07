@@ -79,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { await Snapshot.run(path: path, services: services) }
         }
         Snapshot.captureWindowIfRequested()
+        Snapshot.dumpWindowIfRequested()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

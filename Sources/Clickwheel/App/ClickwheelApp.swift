@@ -116,10 +116,15 @@ struct RootView: View {
             window.standardWindowButton(button)?.isHidden = true
         }
         // The container is what actually paints the band and its hairline;
-        // the properties above only make its *contents* invisible.
-        window.contentView?.superview?.subviews
-            .filter { String(describing: type(of: $0)).contains("Titlebar") }
-            .forEach { $0.isHidden = true }
+        // the properties above only make its *contents* invisible. AppKit adds
+        // it to the frame *after* the first configure pass and macOS 26 nests
+        // a _NSTitlebarDecorationView inside that draws its own hairline, so
+        // the sweep is recursive and re-runs on didBecomeKey (see Coordinator)
+        // — hiding only on launch left the line on screen until the window
+        // happened to be dragged.
+        if let frame = window.contentView?.superview {
+            hideTitlebarChrome(in: frame)
+        }
 
         window.isOpaque = false
         window.backgroundColor = .clear
@@ -133,6 +138,16 @@ struct RootView: View {
 
         updateSize(for: window)
         updateSheen(for: window)
+    }
+
+    private func hideTitlebarChrome(in view: NSView) {
+        for subview in view.subviews {
+            if String(describing: type(of: subview)).contains("Titlebar") {
+                subview.isHidden = true
+            } else {
+                hideTitlebarChrome(in: subview)
+            }
+        }
     }
 
     private func updateSize(for window: NSWindow) {
@@ -170,6 +185,15 @@ struct WindowAccessor: NSViewRepresentable {
             guard let window = view.window else { return }
             onWindow(window)
             context.coordinator.observe(window, onChange: onWindow)
+            // AppKit attaches the titlebar container after the window is
+            // already key, so no notification announces it — without these
+            // re-runs its chrome stays visible until the window is dragged.
+            for delay in [0.2, 0.6, 1.5] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak window] in
+                    guard let window else { return }
+                    onWindow(window)
+                }
+            }
         }
         return view
     }
@@ -186,7 +210,13 @@ struct WindowAccessor: NSViewRepresentable {
 
         func observe(_ window: NSWindow, onChange: @escaping (NSWindow) -> Void) {
             let centre = NotificationCenter.default
-            for name in [NSWindow.didMoveNotification, NSWindow.didChangeScreenNotification] {
+            // didBecomeKey matters: the titlebar container only exists by
+            // then, so it is the earliest moment hiding it can stick.
+            for name in [
+                NSWindow.didMoveNotification,
+                NSWindow.didChangeScreenNotification,
+                NSWindow.didBecomeKeyNotification,
+            ] {
                 tokens.append(
                     centre.addObserver(forName: name, object: window, queue: .main) { _ in
                         MainActor.assumeIsolated { onChange(window) }

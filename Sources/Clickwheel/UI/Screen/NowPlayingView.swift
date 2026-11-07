@@ -158,11 +158,16 @@ struct NowPlayingView: View {
     private func capsuleBar(fraction: Double) -> some View {
         ZStack(alignment: .leading) {
             Capsule().fill(Self.trackGradient)
-            Capsule()
+            // A rectangle clipped by the track, not a second capsule: a
+            // free-standing capsule narrower than its height can't flatten,
+            // so the first seconds of every song drew a pill floating at the
+            // start of the bar instead of a sliver of fill.
+            Rectangle()
                 .fill(Self.fillGradient)
                 .frame(width: 282 * unit * min(1, max(0, fraction)))
         }
         .frame(width: 282 * unit, height: 14 * unit)
+        .clipShape(Capsule())
         .overlay {
             Capsule().strokeBorder(Color(white: 0.718), lineWidth: max(0.5, unit))
         }

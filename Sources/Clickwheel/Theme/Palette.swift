@@ -12,20 +12,17 @@ enum Palette {
     static let shellShadow = Color(red: 0.741, green: 0.753, blue: 0.773)
     static let shellHighlight = Color.white
 
-    /// The wheel is a shade darker and greyer than the body, with a faint
-    /// warm cast from its slightly textured finish.
-    static let wheelBase = Color(red: 0.878, green: 0.878, blue: 0.882)
-    static let wheelRim = Color(red: 0.784, green: 0.788, blue: 0.800)
+    /// Classic-style wheel: a flat matte white disc, a half-step below the
+    /// shell's clearcoat white.
+    static let wheelBase = Color(red: 0.948, green: 0.950, blue: 0.954)
+    static let wheelRim = Color(red: 0.850, green: 0.854, blue: 0.862)
 
-    /// Labels are printed *lighter* than the wheel, not darker.
-    ///
-    /// On the white 5G the wheel is a grey membrane (measured ~194 luminance
-    /// against 228 for the body) carrying near-white glyphs at 230–240 — a
-    /// soft, low-contrast, light-on-grey treatment. Dark glyphs on a pale
-    /// wheel is the iPod 4G / iPod photo look, not this one.
-    static let wheelLabel = Color(red: 0.929, green: 0.933, blue: 0.941)
+    /// Grey glyphs printed on the white wheel — the Classic treatment, where
+    /// MENU and the transport marks sit a few steps down from the disc.
+    static let wheelLabel = Color(red: 0.564, green: 0.572, blue: 0.588)
 
-    static let centreButton = Color(red: 0.906, green: 0.906, blue: 0.910)
+    /// Bare-metal silver, clearly darker than the wheel around it.
+    static let centreButton = Color(red: 0.784, green: 0.792, blue: 0.808)
     static let bezel = Color(red: 0.086, green: 0.086, blue: 0.094)
 
     // MARK: - Screen

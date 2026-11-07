@@ -153,26 +153,26 @@ struct ClickWheelView: View {
         // MENU's cap height is 0.044 of the wheel diameter, and it is a light
         // grotesque — not semibold.
         let menuCap = diameter * 0.044
-        let glyph = diameter * 0.055
+        let glyph = diameter * 0.048
 
         return ZStack {
+            // Medium weight and near-default tracking, matching the printed
+            // MENU on the Classic's wheel.
             Text(verbatim: "MENU")
-                .font(.system(size: menuCap / 0.72, weight: .regular))
-                .tracking(menuCap * 0.10)
+                .font(.system(size: menuCap / 0.72, weight: .medium))
+                .tracking(menuCap * 0.04)
                 .offset(y: -radius)
-            // The real transport glyphs are wider and flatter than the SF
-            // Symbols defaults — roughly 1.8:1 rather than 1.24:1.
-            Image(systemName: "forward.end.fill")
+            // Double-triangle-and-bar marks — `forward.end.fill` has a single
+            // triangle, which is not what is printed on the wheel.
+            Image(systemName: "forward.end.alt.fill")
                 .font(.system(size: glyph))
-                .scaleEffect(x: 1.25, y: 0.86)
                 .offset(x: radius)
             Image(systemName: "playpause.fill")
                 .font(.system(size: glyph))
-                .scaleEffect(x: 1.18, y: 0.86)
+                .scaleEffect(x: 1.08, y: 0.92)
                 .offset(y: radius)
-            Image(systemName: "backward.end.fill")
+            Image(systemName: "backward.end.alt.fill")
                 .font(.system(size: glyph))
-                .scaleEffect(x: 1.25, y: 0.86)
                 .offset(x: -radius)
         }
         .foregroundStyle(Palette.wheelLabel)

@@ -202,9 +202,9 @@ float vnoise(float2 p) {
     // The wheel sits in a moulded well, not on top of the body. The occlusion
     // pools wide and soft around it — a tight ring read as a printed outline.
     float wd = length(centred - wheelCentre) - wheelRadius;
-    colour *= 1.0 - 0.07 * (1.0 - smoothstep(0.0, 4.2 * mmToPt, wd));   // soft pool
-    colour *= 1.0 - 0.26 * (1.0 - smoothstep(0.0, 1.5 * mmToPt, wd));   // contact
-    colour = mix(colour, colour * 0.38, 1.0 - smoothstep(0.4, 1.9, wd));  // groove
+    colour *= 1.0 - 0.06 * (1.0 - smoothstep(0.0, 4.2 * mmToPt, wd));   // soft pool
+    colour *= 1.0 - 0.12 * (1.0 - smoothstep(0.0, 1.2 * mmToPt, wd));   // contact
+    colour = mix(colour, colour * 0.45, 1.0 - smoothstep(0.3, 1.3, wd));  // seam
     float2 wdir = normalize(centred - wheelCentre + float2(1e-4));
     colour += 0.05 * smoothstep(3.4, 1.6, wd) * saturate(dot(wdir, float2(0.42, 0.74)));
 
@@ -278,12 +278,12 @@ float vnoise(float2 p) {
     float2 dir = r > 1e-4 ? centred / r : float2(0.0, -1.0);
     float t = saturate(r / outer);
 
-    // DISHED, not domed. `dir` points outward, so a concave surface needs a
-    // negative coefficient — the old `+dish` lit the wheel as a bubble.
-    float dish = -0.26 * t * t;
-    float rim  =  0.80 * smoothstep(0.90, 1.0, t);
-    float lip  = -0.60 * (1.0 - smoothstep(0.0, 0.09, (r - innerEdge) / outer));
-    float3 n = normalize(float3(dir * (dish + rim + lip), 1.0));
+    // FLAT. The Classic's wheel is a flat white disc sitting flush in the
+    // face: no dish, no dome — only a hair of roll right at the rim and at
+    // the hole, or the edges render as cut paper.
+    float rim  =  0.09 * smoothstep(0.985, 1.0, t);
+    float lip  = -0.08 * (1.0 - smoothstep(0.0, 0.018, (r - innerEdge) / outer));
+    float3 n = normalize(float3(dir * (rim + lip), 1.0));
 
     float3 v = float3(0.0, 0.0, 1.0);
     float3 keyPos = float3((-0.55 + light.x) * outer * 3.0,
@@ -292,29 +292,31 @@ float vnoise(float2 p) {
     float3 l = normalize(keyPos - float3(centred, 0.0));
     float3 h = normalize(l + v);
 
-    const float roughness = 0.42;
+    const float roughness = 0.58;
     float ndotv = saturate(dot(n, v));
     float ndotl = saturate(dot(n, l));
-    float3 F = fresnelRough(float3(0.050), ndotv, roughness);
+    float3 F = fresnelRough(float3(0.045), ndotv, roughness);
 
-    float3 albedo = srgbToLinear(float3(0.812, 0.816, 0.828));
+    // Bright matte white, a half-step below the shell's clearcoat.
+    float3 albedo = srgbToLinear(float3(0.948, 0.950, 0.954));
 
-    const float wrap = 0.48;
+    const float wrap = 0.55;
     float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
-    float3 ambient = studioFar(n, light) * 0.34;
-    float3 colour = albedo * (ambient + 0.80 * diffuse) * (1.0 - F);
-    colour += studioFar(reflect(-v, n), light) * F * 0.55;
-    colour += ggx(n, h, roughness) * ndotl * F * 0.35;
+    float3 ambient = studioFar(n, light) * 0.36;
+    float3 colour = albedo * (ambient + 0.78 * diffuse) * (1.0 - F);
+    colour += studioFar(reflect(-v, n), light) * F * 0.30;
+    colour += ggx(n, h, roughness) * ndotl * F * 0.18;
 
-    // Occlusion into the body at the rim, and under the button at the hole.
-    colour *= 1.0 - 0.22 * smoothstep(0.90, 1.0, t);
-    colour *= 1.0 - 0.30 * (1.0 - smoothstep(innerEdge, innerEdge + outer * 0.09, r));
+    // Crisp hairline seams — the Classic's wheel meets the body and the
+    // button at thin dark lines, not shaded gutters.
+    colour *= 1.0 - 0.15 * smoothstep(0.994, 1.0, t);
+    colour *= 1.0 - 0.09 * (1.0 - smoothstep(innerEdge, innerEdge + outer * 0.012, r));
 
     colour = linearToSRGB(shoulder(colour));
 
-    // Fine moulding texture — the real wheel is matte, not smooth.
-    colour += (grain(position * 2.0) - 0.5) * 0.010;
-    colour += (grain(position * 0.35 + 11.0) - 0.5) * 0.006;
+    // Fine moulding texture — matte, not polished.
+    colour += (grain(position * 2.0) - 0.5) * 0.008;
+    colour += (grain(position * 0.35 + 11.0) - 0.5) * 0.004;
 
     return half4(half3(saturate(colour)), 1.0) * half(coverage);
 }
@@ -341,10 +343,11 @@ float vnoise(float2 p) {
     float2 dir = r > 1e-4 ? centred / r : float2(0.0, -1.0);
     float t = saturate(r / outer);
 
-    // Crowned: a shallow dome that turns down sharply into a small edge roll.
-    float crown = 0.30 * t * t;
-    float roll  = 0.95 * smoothstep(0.86, 1.0, t);
-    float3 n = normalize(float3(dir * (crown + roll), 1.0));
+    // Gently concave, like the Classic's bare-metal button: a shallow dish
+    // meeting the wheel at a crisp edge, not a rolled bowl.
+    float dish = -0.05 * t * t;
+    float roll  = 0.16 * smoothstep(0.955, 1.0, t);
+    float3 n = normalize(float3(dir * (dish + roll), 1.0));
 
     float3 v = float3(0.0, 0.0, 1.0);
     float3 keyPos = float3((-0.55 + light.x) * outer * 7.0,
@@ -353,13 +356,13 @@ float vnoise(float2 p) {
     float3 l = normalize(keyPos - float3(centred, 0.0));
     float3 h = normalize(l + v);
 
-    // Same material as the wheel: only the geometry differs.
-    const float roughness = 0.42;
+    const float roughness = 0.48;
     float ndotv = saturate(dot(n, v));
     float ndotl = saturate(dot(n, l));
     float3 F = fresnelRough(float3(0.050), ndotv, roughness);
 
-    float3 albedo = srgbToLinear(float3(0.914, 0.918, 0.929));
+    // Silver, a step darker than the white wheel around it.
+    float3 albedo = srgbToLinear(float3(0.822, 0.828, 0.842));
 
     const float wrap = 0.48;
     float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
@@ -368,8 +371,8 @@ float vnoise(float2 p) {
     colour += studioFar(reflect(-v, n), light) * F * 0.55;
     colour += ggx(n, h, roughness) * ndotl * F * 0.35;
 
-    // Occlusion around the base, where it meets the wheel.
-    colour *= 1.0 - 0.16 * smoothstep(0.82, 1.0, t);
+    // A hairline seam where it meets the wheel.
+    colour *= 1.0 - 0.11 * smoothstep(0.988, 1.0, t);
 
     // Pressing sinks it: the crown flattens and the base occlusion deepens
     // rather than the whole cap turning grey.

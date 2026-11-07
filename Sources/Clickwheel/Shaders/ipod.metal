@@ -130,6 +130,18 @@ float grain(float2 p) {
     return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
 }
 
+/// Smooth value noise over `grain`, for features larger than a pixel.
+float vnoise(float2 p) {
+    float2 i = floor(p);
+    float2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = grain(i);
+    float b = grain(i + float2(1.0, 0.0));
+    float c = grain(i + float2(0.0, 1.0));
+    float d = grain(i + float2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
 } // namespace
 
 // MARK: - Shell
@@ -187,12 +199,21 @@ float grain(float2 p) {
 
     float3 colour = body + spec;
 
-    // The wheel sits in a moulded well, not on top of the body.
+    // The wheel sits in a moulded well, not on top of the body. The occlusion
+    // pools wide and soft around it — a tight ring read as a printed outline.
     float wd = length(centred - wheelCentre) - wheelRadius;
-    colour *= 1.0 - 0.30 * (1.0 - smoothstep(0.0, 8.0, wd));    // occlusion
+    colour *= 1.0 - 0.07 * (1.0 - smoothstep(0.0, 4.2 * mmToPt, wd));   // soft pool
+    colour *= 1.0 - 0.26 * (1.0 - smoothstep(0.0, 1.5 * mmToPt, wd));   // contact
     colour = mix(colour, colour * 0.38, 1.0 - smoothstep(0.4, 1.9, wd));  // groove
     float2 wdir = normalize(centred - wheelCentre + float2(1e-4));
     colour += 0.05 * smoothstep(3.4, 1.6, wd) * saturate(dot(wdir, float2(0.42, 0.74)));
+
+    // Broad curvature falloff. The face is nearly flat, but it is not a
+    // plane: the last few millimetres bow away from the viewer, and that
+    // soft darkening toward every edge is most of what makes the object
+    // read as a volume instead of a sticker.
+    float inwardAll = -d;
+    colour *= 1.0 - 0.075 * (1.0 - smoothstep(0.6 * mmToPt, 4.5 * mmToPt, inwardAll));
 
     // The two-part assembly at the silhouette. Crossing the real edge from
     // outside in, the tone profile runs:
@@ -217,6 +238,15 @@ float grain(float2 p) {
 
     colour = mix(colour, steel, chrome * 0.88);
     colour = mix(colour, colour * 0.30, seam * 0.85);
+
+    // Micro-wear. Twenty-year-old acrylic carries hairline swirls that are
+    // invisible face-on and flash as the highlight crosses them, so the
+    // streaks ride the specular term only — never the body colour. Two
+    // directions, both sparse.
+    float2 q = float2(position.x - position.y, position.x + position.y) * 0.707;
+    float swirl = smoothstep(0.80, 0.98, vnoise(float2(q.x * 1.1, q.y * 0.05)))
+                + 0.8 * smoothstep(0.84, 0.99, vnoise(float2(position.y * 1.3 + 47.0, position.x * 0.045)));
+    colour += swirl * dot(spec, float3(0.333)) * 0.30;
 
     colour = linearToSRGB(shoulder(colour));
     colour += (grain(position * 2.0) - 0.5) * 0.0055;
@@ -385,6 +415,21 @@ float grain(float2 p) {
         float gap = 1.0 - smoothstep(0.0, line * 2.0, min(border.x, border.y));
         colour *= 1.0 - gridStrength * gap;
     }
+
+    // Edge-lit backlight. The CCFL runs along the bottom of the panel, so
+    // the field brightens toward it, bleeds faintly in the bottom corners
+    // and falls off a touch at the top. A perfectly uniform screen reads as
+    // a texture, not a lit panel.
+    colour *= 0.985 + 0.045 * smoothstep(0.45, 1.0, uv.y);
+    colour *= 1.0 - 0.025 * smoothstep(0.25, 0.0, uv.y);
+    float bleed = exp(-length((uv - float2(0.03, 1.0)) * float2(12.0, 8.0)))
+                + exp(-length((uv - float2(0.97, 1.0)) * float2(12.0, 8.0)));
+    colour += bleed * 0.030;
+
+    // The LCD sits a millimetre behind the acrylic window, and the opening's
+    // top lip shades the recess; the sides take a lighter version.
+    colour *= 1.0 - 0.14 * smoothstep(0.045, 0.0, uv.y);
+    colour *= 1.0 - 0.05 * smoothstep(0.030, 0.0, min(uv.x, 1.0 - uv.x));
 
     float band = uv.x * 0.72 + uv.y * 0.62;
     float highlight = exp(-pow((band - sheen) * 2.6, 2.0)) * 0.13;

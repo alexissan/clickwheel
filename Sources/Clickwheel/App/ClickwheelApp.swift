@@ -18,6 +18,11 @@ struct RootView: View {
     /// view in it can ever hold keyboard focus.
     @State private var keys = KeyMonitor()
 
+    /// Where the window sits on screen, 0...1, the base the cursor offsets.
+    @State private var roomAnchor = CGPoint(x: 0.5, y: 0.5)
+    @State private var hostWindow: NSWindow?
+    @State private var cursorTask: Task<Void, Never>?
+
     var body: some View {
         IPodBody(height: height, sheen: sheen, light: light)
             .padding(Self.shadowPadding)
@@ -25,8 +30,15 @@ struct RootView: View {
                 configure(window)
             })
             .task { await start() }
-            .onAppear { keys.start { handleKey($0) } }
-            .onDisappear { keys.stop() }
+            .onAppear {
+                keys.start { handleKey($0) }
+                startCursorTracking()
+            }
+            .onDisappear {
+                keys.stop()
+                cursorTask?.cancel()
+                cursorTask = nil
+            }
     }
 
     /// Room around the body for the drop shadow to render into; the window
@@ -162,13 +174,59 @@ struct RootView: View {
 
     /// Maps the window's position on screen to where the reflection falls.
     private func updateSheen(for window: NSWindow) {
+        hostWindow = window
         guard let screen = window.screen ?? NSScreen.main else { return }
         let x = (window.frame.midX - screen.frame.minX) / max(1, screen.frame.width)
         let y = (window.frame.midY - screen.frame.minY) / max(1, screen.frame.height)
-        sheen = 0.12 + (x * 0.55) + (1 - y) * 0.35
-        // Same signal drives the plastic's key light, so body and glass move
-        // together rather than the reflection sliding over a static object.
-        light = CGPoint(x: (x - 0.5) * 0.9, y: (y - 0.5) * 0.6)
+        roomAnchor = CGPoint(x: x, y: y)
+        (sheen, light) = Self.room(atX: x, y: y)
+    }
+
+    /// One mapping from a screen-space position to the lighting uniforms, so
+    /// the window signal and the cursor signal cannot drift apart. The same
+    /// value drives the glass sheen and the plastic's key light: body and
+    /// glass move together rather than a reflection sliding over a static
+    /// object.
+    private static func room(atX x: CGFloat, y: CGFloat) -> (CGFloat, CGPoint) {
+        let sheen = 0.12 + (x * 0.55) + (1 - y) * 0.35
+        let light = CGPoint(x: (x - 0.5) * 0.9, y: (y - 0.5) * 0.6)
+        return (sheen, light)
+    }
+
+    // MARK: - Cursor parallax
+
+    /// The cursor nudges the lighting around the window's own anchor, so the
+    /// reflections shift as the pointer passes — the object answers the room
+    /// instead of holding a pose. Polled: `NSEvent.mouseLocation` needs no
+    /// event monitor and no permission, and the writes stop once converged.
+    private func startCursorTracking() {
+        guard cursorTask == nil else { return }
+        cursorTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(33))
+                trackCursor()
+            }
+        }
+    }
+
+    private func trackCursor() {
+        guard let window = hostWindow, let screen = window.screen ?? NSScreen.main else { return }
+        let mouse = NSEvent.mouseLocation
+        let dx = (mouse.x - window.frame.midX) / max(1, screen.frame.width)
+        let dy = (mouse.y - window.frame.midY) / max(1, screen.frame.height)
+        let (targetSheen, targetLight) = Self.room(
+            atX: roomAnchor.x + dx * 1.1,
+            y: roomAnchor.y + dy * 1.1
+        )
+
+        let stepSheen = (targetSheen - sheen) * 0.22
+        let stepX = (targetLight.x - light.x) * 0.22
+        let stepY = (targetLight.y - light.y) * 0.22
+        // Converged: stop touching @State so an idle app stops re-rendering.
+        guard abs(stepSheen) + abs(stepX) + abs(stepY) > 0.0006 else { return }
+        sheen += stepSheen
+        light.x += stepX
+        light.y += stepY
     }
 }
 

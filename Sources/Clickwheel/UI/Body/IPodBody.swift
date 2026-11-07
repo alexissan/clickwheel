@@ -62,6 +62,16 @@ struct IPodBody: View {
         let bezelInset = 1.4 * scale
 
         return ZStack {
+            // A soft occlusion halo where the window cuts into the plastic —
+            // the plastic shades gently into the opening instead of meeting
+            // the black frame at a hard boundary.
+            RoundedRectangle(cornerRadius: (Metrics.screenCornerRadius + 1.0) * scale, style: .continuous)
+                .fill(.black)
+                .frame(width: screenWidth + bezelInset * 2 + 1.2 * scale,
+                       height: screenHeight + bezelInset * 2 + 1.2 * scale)
+                .blur(radius: 1.1 * scale)
+                .opacity(0.18)
+
             // The LCD's own black frame, visible as a thin border on the real
             // device between the white plastic and the active area.
             RoundedRectangle(cornerRadius: (Metrics.screenCornerRadius + 0.6) * scale, style: .continuous)
@@ -84,6 +94,30 @@ struct IPodBody: View {
                     sheen: sheen,
                     unit: unit
                 )
+
+            // The acrylic window's edge. Its lower lip catches the room and
+            // its upper one sits in shadow — the cue that there is a
+            // transparent material with thickness here, not a black border
+            // printed on the face.
+            RoundedRectangle(cornerRadius: (Metrics.screenCornerRadius + 0.6) * scale, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black.opacity(0.32), location: 0.00),
+                            .init(color: .clear, location: 0.22),
+                            .init(color: .clear, location: 0.78),
+                            .init(color: .white.opacity(0.38), location: 1.00),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.4 * scale
+                )
+                .frame(
+                    width: screenWidth + bezelInset * 2,
+                    height: screenHeight + bezelInset * 2
+                )
+                .allowsHitTesting(false)
         }
         .frame(width: screenWidth + bezelInset * 2, height: screenHeight + bezelInset * 2)
         .offset(

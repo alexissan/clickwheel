@@ -147,7 +147,12 @@ enum Snapshot {
             navigator.finishBoot()
             if let list = services.library.favourites,
                let songs = services.library.cachedSongs(in: list), !songs.isEmpty {
-                services.player.stageForPreview(list: list, songs: songs, index: 2)
+                // Which favourite gets staged; artwork varies with the library.
+                let index = ProcessInfo.processInfo.environment["CLICKWHEEL_SNAPSHOT_INDEX"]
+                    .flatMap { Int($0) } ?? 2
+                services.player.stageForPreview(
+                    list: list, songs: songs, index: min(max(0, index), songs.count - 1)
+                )
                 await services.player.loadPreviewArtwork()
             }
             navigator.previewPush(.nowPlaying)

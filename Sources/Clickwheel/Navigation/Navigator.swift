@@ -10,6 +10,7 @@ enum LevelID: Hashable {
     case playlists
     case extras
     case settings
+    case styles
     case tracks(listID: String)
     /// The browse tree over the starred pool: group, then one group's songs.
     case artists
@@ -152,8 +153,16 @@ final class Navigator {
                 Row(id: "brick", title: t("menu.brick", "Brick"), showsChevron: true),
             ]
 
+        case .styles:
+            return DeviceStyle.allCases.map { style in
+                Row(id: style.rawValue, title: style.label,
+                    detail: device.style == style ? "✓" : nil)
+            }
+
         case .settings:
             return [
+                Row(id: "style", title: t("menu.style", "Style"),
+                    detail: device.style.label, showsChevron: true),
                 // The physical switch lives on the top edge of the real device,
                 // which isn't visible face-on, so this is its only home besides
                 // the H key.
@@ -237,6 +246,7 @@ final class Navigator {
         case .menu(.playlists): t("menu.playlists", "Playlists")
         case .menu(.extras): t("menu.extras", "Extras")
         case .menu(.settings): t("menu.settings", "Settings")
+        case .menu(.styles): t("menu.style", "Style")
         case .menu(.tracks(let listID)):
             library.playlists.first(where: { $0.id == listID })?.name ?? t("menu.songs", "Songs")
         case .menu(.artists): t("menu.artists", "Artists")
@@ -450,6 +460,9 @@ final class Navigator {
             default: break
             }
 
+        case .styles:
+            if let style = DeviceStyle(rawValue: row.id) { device.style = style }
+
         case .settings:
             applySetting(row.id)
         }
@@ -485,6 +498,11 @@ final class Navigator {
 
     private func applySetting(_ id: String) {
         switch id {
+        case "style":
+            push(.menu(.styles))
+            if let index = DeviceStyle.allCases.firstIndex(of: device.style) {
+                scroll(by: index)
+            }
         case "hold":
             device.isHeld.toggle()
         case "shufflemode":

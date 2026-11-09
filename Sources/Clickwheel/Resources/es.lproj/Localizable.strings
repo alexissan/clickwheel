@@ -74,3 +74,11 @@
 "a11y.score" = "Puntuación %d";
 
 "menu.hold" = "Bloqueo";
+
+"menu.style" = "Estilo";
+"style.classic" = "Blanco clásico";
+"style.black" = "Negro";
+"style.field" = "Militar";
+"style.walnut" = "Nogal";
+"style.midnight" = "Medianoche";
+"style.champagne" = "Champán";

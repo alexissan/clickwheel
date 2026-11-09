@@ -27,6 +27,22 @@ Keyboard: **↑ ↓** scroll · **⏎** select · **esc** back · **P** play/pau
 
 ---
 
+## Device styles
+
+Open **Settings › Style** on the iPod. Turn the wheel or use ↑ / ↓ to choose a
+finish, then press the centre button or Return to apply it. The checkmark shows
+the active style, and the choice survives relaunching the app.
+
+Classic White · Black · Field (olive and charcoal) · Walnut (brown and ivory) ·
+Midnight (navy and silver) · Champagne (gold and cream).
+
+To capture a finish without changing your saved choice:
+
+```bash
+CLICKWHEEL_SNAPSHOT=/tmp/field.png CLICKWHEEL_SNAPSHOT_STYLE=field \
+  CLICKWHEEL_SNAPSHOT_SCREEN=styles build/Clickwheel.app/Contents/MacOS/Clickwheel
+```
+
 ## The idea
 
 Every dimension comes from the real device — 103.5 × 61.8 mm, a 38.2 mm wheel centred 72.8 mm down, a 2.5" 320×240 panel — and everything on screen is derived from those millimetres rather than hand-placed. That is what makes **Settings › Actual Size** possible: it reads the display's true physical size from `CGDisplayScreenSize` and renders the iPod life-sized, so it matches a real one held against the screen.

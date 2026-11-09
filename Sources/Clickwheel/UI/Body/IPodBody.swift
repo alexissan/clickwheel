@@ -49,7 +49,8 @@ struct IPodBody: View {
                     x: Metrics.wheelCentreX * scale - width / 2,
                     y: Metrics.wheelCentreY * scale - height / 2
                 ),
-                wheelRadius: Metrics.wheelDiameter * scale / 2
+                wheelRadius: Metrics.wheelDiameter * scale / 2,
+                style: device.style
             )
     }
 

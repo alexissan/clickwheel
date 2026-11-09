@@ -155,7 +155,9 @@ float vnoise(float2 p) {
     float2 light,          // -1...1, where the key sits; same signal as `sheen`
     float2 wheelCentre,    // in this view's points; the moulded well
     float wheelRadius,
-    float pointsPerPixel
+    float pointsPerPixel,
+    float3 tint,
+    float roughness
 ) {
     float2 halfSize = size * 0.5;
     float2 centred = position - halfSize;
@@ -186,7 +188,7 @@ float vnoise(float2 p) {
     float3 F = fresnelSchlick(f0, ndotv);
 
     // Cool off-white. Authored in sRGB to match Palette.shellBase.
-    float3 albedo = srgbToLinear(float3(0.941, 0.946, 0.954));
+    float3 albedo = srgbToLinear(tint);
 
     const float wrap = 0.32;
     float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
@@ -194,8 +196,10 @@ float vnoise(float2 p) {
     float3 body = albedo * (ambient + 0.86 * diffuse) * (1.0 - F);
 
     float3 r = reflect(-v, n);
-    float3 spec = environmentFor(r, centred, halfSize, light) * F;
-    spec += ggx(n, h, 0.085) * ndotl * F * 0.60;
+    float matte = smoothstep(0.085, 0.60, roughness);
+    float3 reflected = mix(environmentFor(r, centred, halfSize, light), studioFar(r, light) * 0.45, matte);
+    float3 spec = reflected * F * mix(1.0, 0.35, matte);
+    spec += ggx(n, h, roughness) * ndotl * F * mix(0.60, 0.16, matte);
 
     float3 colour = body + spec;
 
@@ -262,7 +266,8 @@ float vnoise(float2 p) {
     float2 size,
     float innerRatio,
     float2 light,
-    float pointsPerPixel
+    float pointsPerPixel,
+    float3 tint
 ) {
     float2 halfSize = size * 0.5;
     float2 centred = position - halfSize;
@@ -298,7 +303,7 @@ float vnoise(float2 p) {
     float3 F = fresnelRough(float3(0.045), ndotv, roughness);
 
     // Bright matte white, a half-step below the shell's clearcoat.
-    float3 albedo = srgbToLinear(float3(0.948, 0.950, 0.954));
+    float3 albedo = srgbToLinear(tint);
 
     const float wrap = 0.55;
     float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));
@@ -329,7 +334,8 @@ float vnoise(float2 p) {
     float2 size,
     float pressed,
     float2 light,
-    float pointsPerPixel
+    float pointsPerPixel,
+    float3 tint
 ) {
     float2 halfSize = size * 0.5;
     float2 centred = position - halfSize;
@@ -362,7 +368,7 @@ float vnoise(float2 p) {
     float3 F = fresnelRough(float3(0.050), ndotv, roughness);
 
     // Silver, a step darker than the white wheel around it.
-    float3 albedo = srgbToLinear(float3(0.822, 0.828, 0.842));
+    float3 albedo = srgbToLinear(tint);
 
     const float wrap = 0.48;
     float diffuse = saturate((ndotl + wrap) / (1.0 + wrap));

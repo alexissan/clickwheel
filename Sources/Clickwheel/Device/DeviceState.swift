@@ -7,6 +7,8 @@ import Observation
 @MainActor
 @Observable
 final class DeviceState {
+    private let defaults: UserDefaults
+
     // MARK: - Hold switch
 
     /// When held, the wheel and buttons are dead and the status bar shows a
@@ -14,7 +16,7 @@ final class DeviceState {
     var isHeld = false {
         didSet {
             guard isHeld != oldValue else { return }
-            UserDefaults.standard.set(isHeld, forKey: Keys.hold)
+            defaults.set(isHeld, forKey: Keys.hold)
             if isHeld { Haptics.press() }
             wake()
         }
@@ -30,7 +32,7 @@ final class DeviceState {
     /// app — so the behaviour is opt-in from Settings rather than the default.
     var backlightTimeout: TimeInterval = 0 {
         didSet {
-            UserDefaults.standard.set(backlightTimeout, forKey: Keys.backlight)
+            defaults.set(backlightTimeout, forKey: Keys.backlight)
             wake()
         }
     }
@@ -39,22 +41,29 @@ final class DeviceState {
 
     // MARK: - Settings
 
+    var style: DeviceStyle = .classic {
+        didSet {
+            guard style != oldValue, !Snapshot.isRendering else { return }
+            defaults.set(style.rawValue, forKey: Keys.style)
+        }
+    }
+
     var isClickerOn = true {
-        didSet { UserDefaults.standard.set(isClickerOn, forKey: Keys.clicker) }
+        didSet { defaults.set(isClickerOn, forKey: Keys.clicker) }
     }
 
     var isHapticsOn = true {
-        didSet { UserDefaults.standard.set(isHapticsOn, forKey: Keys.haptics) }
+        didSet { defaults.set(isHapticsOn, forKey: Keys.haptics) }
     }
 
     /// Renders the device at its true physical size using the display's
     /// reported dimensions.
     var isActualSize = false {
-        didSet { UserDefaults.standard.set(isActualSize, forKey: Keys.actualSize) }
+        didSet { defaults.set(isActualSize, forKey: Keys.actualSize) }
     }
 
     var floatsAboveOtherWindows = false {
-        didSet { UserDefaults.standard.set(floatsAboveOtherWindows, forKey: Keys.floats) }
+        didSet { defaults.set(floatsAboveOtherWindows, forKey: Keys.floats) }
     }
 
     // MARK: - Battery
@@ -68,8 +77,9 @@ final class DeviceState {
 
     // MARK: - Lifecycle
 
-    init() {
-        let defaults = UserDefaults.standard
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        style = DeviceStyle(rawValue: defaults.string(forKey: Keys.style) ?? "") ?? .classic
         isHeld = defaults.bool(forKey: Keys.hold)
         isClickerOn = defaults.object(forKey: Keys.clicker) as? Bool ?? true
         isHapticsOn = defaults.object(forKey: Keys.haptics) as? Bool ?? true
@@ -157,6 +167,7 @@ final class DeviceState {
     }
 
     private enum Keys {
+        static let style = "device.style"
         static let hold = "device.hold"
         static let clicker = "device.clicker"
         static let haptics = "device.haptics"

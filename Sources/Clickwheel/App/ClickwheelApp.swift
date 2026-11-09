@@ -270,7 +270,7 @@ final class KeyMonitor {
 /// Bridges to the hosting `NSWindow`, and keeps the reflection in step as the
 /// window is dragged around the desktop.
 struct WindowAccessor: NSViewRepresentable {
-    let onWindow: (NSWindow) -> Void
+    let onWindow: @MainActor @Sendable (NSWindow) -> Void
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
@@ -301,7 +301,7 @@ struct WindowAccessor: NSViewRepresentable {
     final class Coordinator {
         private var tokens: [NSObjectProtocol] = []
 
-        func observe(_ window: NSWindow, onChange: @escaping (NSWindow) -> Void) {
+        func observe(_ window: NSWindow, onChange: @escaping @MainActor @Sendable (NSWindow) -> Void) {
             let centre = NotificationCenter.default
             // didBecomeKey matters: the titlebar container only exists by
             // then, so it is the earliest moment hiding it can stick.

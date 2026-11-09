@@ -30,5 +30,6 @@ let package = Package(
                 .swiftLanguageMode(.v6),
             ]
         ),
+        .testTarget(name: "ClickwheelTests", dependencies: ["Clickwheel"]),
     ]
 )

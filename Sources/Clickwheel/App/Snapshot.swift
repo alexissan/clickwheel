@@ -88,6 +88,11 @@ enum Snapshot {
             _ = await services.library.songs(in: favourites)
         }
 
+        if let rawStyle = ProcessInfo.processInfo.environment["CLICKWHEEL_SNAPSHOT_STYLE"],
+           let style = DeviceStyle(rawValue: rawStyle) {
+            services.device.style = style
+        }
+        services.device.stageBatteryForPreview(0.85)
         await configure(services)
 
         // Lets a snapshot reproduce the dimmed-panel state, which is otherwise
@@ -172,6 +177,10 @@ enum Snapshot {
         case "music":
             navigator.finishBoot()
             navigator.previewPush(.menu(.music))
+        case "styles":
+            navigator.finishBoot()
+            navigator.previewPush(.menu(.settings))
+            navigator.pressSelect()
         case "settings":
             navigator.finishBoot()
             navigator.previewPush(.menu(.settings))

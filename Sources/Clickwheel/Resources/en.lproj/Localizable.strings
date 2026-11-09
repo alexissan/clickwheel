@@ -74,3 +74,11 @@
 "a11y.score" = "Score %d";
 
 "menu.hold" = "Hold";
+
+"menu.style" = "Style";
+"style.classic" = "Classic White";
+"style.black" = "Black";
+"style.field" = "Field";
+"style.walnut" = "Walnut";
+"style.midnight" = "Midnight";
+"style.champagne" = "Champagne";

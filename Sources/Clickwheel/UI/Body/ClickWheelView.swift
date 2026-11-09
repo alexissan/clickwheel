@@ -2,6 +2,8 @@ import SwiftUI
 
 /// The click wheel: circular drag, scroll wheel, and the five buttons.
 struct ClickWheelView: View {
+    @Environment(DeviceState.self) private var device
+
     /// Where on the ring a press landed.
     enum Region {
         case menu, next, playPause, previous
@@ -62,7 +64,8 @@ struct ClickWheelView: View {
             .clickWheelMaterial(
                 size: CGSize(width: diameter, height: diameter),
                 innerRatio: innerRatio,
-                light: light
+                light: light,
+                style: device.style
             )
             .contentShape(
                 // Only the ring should take drags; the hole belongs to Select.
@@ -175,7 +178,7 @@ struct ClickWheelView: View {
                 .font(.system(size: glyph))
                 .offset(x: -radius)
         }
-        .foregroundStyle(Palette.wheelLabel)
+        .foregroundStyle(device.style.finish.ink.color)
         .allowsHitTesting(false)
     }
 
@@ -187,7 +190,8 @@ struct ClickWheelView: View {
             .centreButtonMaterial(
                 size: CGSize(width: buttonDiameter, height: buttonDiameter),
                 pressed: isCentrePressed,
-                light: light
+                light: light,
+                style: device.style
             )
             .frame(width: buttonDiameter, height: buttonDiameter)
             .contentShape(Circle())
@@ -232,7 +236,7 @@ final class WheelScrollReader {
     /// Points of scroll per detent.
     private static let pointsPerDetent: CGFloat = 6
 
-    func start(onScroll: @escaping (Int) -> Void, onIdle: @escaping () -> Void) {
+    func start(onScroll: @escaping (Int) -> Void, onIdle: @escaping @MainActor @Sendable () -> Void) {
         guard monitor == nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
             // Read the scalars out here: `NSEvent` isn't `Sendable`, so it must
@@ -262,7 +266,7 @@ final class WheelScrollReader {
     private func handle(
         delta: CGFloat,
         onScroll: (Int) -> Void,
-        onIdle: @escaping () -> Void
+        onIdle: @escaping @MainActor @Sendable () -> Void
     ) -> Bool {
         accumulated += delta
         let steps = Int(accumulated / Self.pointsPerDetent)
@@ -275,7 +279,7 @@ final class WheelScrollReader {
         return true
     }
 
-    private func scheduleIdle(_ onIdle: @escaping () -> Void) {
+    private func scheduleIdle(_ onIdle: @escaping @MainActor @Sendable () -> Void) {
         idleTimer?.invalidate()
         idleTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: false) { _ in
             Task { @MainActor in onIdle() }

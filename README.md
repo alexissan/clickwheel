@@ -14,11 +14,15 @@ macOS 15+ · Apple Silicon and Intel · Free and open source
 
 Browse your favourites, turn up the volume, and sneak in a game of Brick.
 
-<video src="https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-walkthrough.mp4" controls width="720"></video>
+[![Watch the 24-second walkthrough](docs/walkthrough-preview.gif)](https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-walkthrough.mp4)
+
+[Watch the 24-second walkthrough · MP4](https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-walkthrough.mp4)
 
 Six finishes. The selector lives right where it should: **Settings → Style**, inside the iPod.
 
-<video src="https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-styles-demo.mp4" controls width="720"></video>
+[![Watch all six finishes in 14 seconds](docs/styles-preview.gif)](https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-styles-demo.mp4)
+
+[Watch all six finishes in 14 seconds · MP4](https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-styles-demo.mp4)
 
 ## Make it yours
 

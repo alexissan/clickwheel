@@ -4,6 +4,14 @@ A hyperrealistic 5th-generation iPod that lives on your Mac and plays your starr
 
 The wheel actually works. Spin it with your thumb, it ticks, and the trackpad taps back.
 
+[Download Clickwheel for macOS](https://github.com/alexissan/clickwheel/releases/latest) · macOS 15+ · Apple Silicon & Intel
+
+Developer ID signed. This release is not notarized by Apple.
+
+<video src="https://github.com/alexissan/clickwheel/releases/download/v1.1.0/clickwheel-styles-demo.mp4" controls width="720"></video>
+
+*Six finishes, selected inside the iPod’s own Settings.*
+
 https://github.com/user-attachments/assets/790ae6d5-335c-4889-b640-62ddf30e9761
 
 *Thirty seconds, recorded by the app itself: `CLICKWHEEL_DEMO=demo.mov` scripts the tour and writes the frames.*
